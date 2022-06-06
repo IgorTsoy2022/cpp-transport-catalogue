@@ -3,24 +3,25 @@
 namespace cat {
 namespace print {
 
-void Info(TransportCatalogue& db,
-    const std::vector<std::pair<std::string, std::string>>
-    queries, int precision, std::ostream& out) {
+void Info(TransportCatalogue& db, const std::vector<QUERY>& queries,
+          int precision, std::ostream& out) {
     for (const auto& query : queries) {
-        if (query.first == "Bus") {
-            auto bus_info = db.GetBusInfo(query.second);
+        if (query.type == QueryType::BUS) {
+            auto bus_info = db.GetBusInfo(query.query);
             BusInfo(bus_info, precision, out);
             continue;
         }
-        if (query.first == "Stop") {
-            auto stop_info = db.GetStopInfo(query.second);
+        if (query.type == QueryType::STOP) {
+            auto stop_info = db.GetStopInfo(query.query);
             StopInfo(stop_info, out);
+            continue;
         }
+        out << "Unknown query." << std::endl;
     }
 }
 
-void BusInfo(const BUS_Info& bus,
-                  int precision, std::ostream& out) {
+void BusInfo(const BUS_Info& bus, int precision,
+             std::ostream& out) {
     out << std::setprecision(precision)
         << "Bus " << bus.name << ": ";
     if (bus.route_stops > 0) {
@@ -51,8 +52,8 @@ void StopInfo(const STOP_Info& stop, std::ostream& out) {
     out << std::endl;
 }
 
-void Stops(const TransportCatalogue& tc,
-                int precision, std::ostream& out) {
+void Stops(const TransportCatalogue& tc, int precision,
+           std::ostream& out) {
     for (auto& [key, coords] : tc.GetStops()) {
         out << std::setprecision(precision)
             << "Stop [" << key
@@ -61,8 +62,7 @@ void Stops(const TransportCatalogue& tc,
     }
 }
 
-void Buses(const TransportCatalogue& tc,
-                std::ostream& out) {
+void Buses(const TransportCatalogue& tc, std::ostream& out) {
     for (auto& [key, bus] : tc.GetBuses()) {
         out << "Bus [" << key << "]: ";
         auto count = bus->stops.size();
@@ -74,8 +74,7 @@ void Buses(const TransportCatalogue& tc,
     }
 }
 
-void Distances(const TransportCatalogue& tc,
-                    std::ostream& out) {
+void Distances(const TransportCatalogue& tc, std::ostream& out) {
     for (auto& [key, distance] : tc.GetDistances()) {
         out << "Distance between [" << key.first->name
             << "] - [" << key.second->name << "] = "

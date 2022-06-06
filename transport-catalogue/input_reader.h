@@ -13,9 +13,21 @@
 namespace cat {
 namespace queries {
 
-std::vector<std::pair<std::string, std::string>>
+std::vector<QUERY>
 QueriesToDataBase(TransportCatalogue& db,
                   std::istream& in = std::cin);
+QueryType GetQueryType(std::string_view value);
+void AddStopQuery(std::string_view name,
+                  std::string_view query,
+                  TransportCatalogue& db,
+                  std::unordered_map<std::string,
+                  std::vector<std::pair<std::string, int>>>&
+                  distances);
+void AddBusQuery(std::string_view name,
+                 std::string_view query,
+                 std::unordered_map<std::string,
+                 std::pair<bool, std::vector<std::string>>>&
+                 buses);
 
 bool IsIntNumber(std::string_view symbols);
 

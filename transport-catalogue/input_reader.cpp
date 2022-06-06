@@ -2,20 +2,19 @@
 
 using namespace std::string_view_literals;
 
-namespace cat {
-
 const std::string_view WHITESPACE = " \f\n\r\t\v"sv;
 
+namespace cat {
 namespace queries {
  
-std::vector<std::pair<std::string, std::string>>
+std::vector<QUERY>
 QueriesToDataBase(TransportCatalogue& db,
                   std::istream& in) {
     std::unordered_map<std::string,
         std::vector<std::pair<std::string, int>>> distances;
     std::unordered_map<std::string,
         std::pair<bool, std::vector<std::string>>> buses;
-    std::vector<std::pair<std::string, std::string>> queries;
+    std::vector<QUERY> queries;
     std::string line;
     int count = 0;
     in >> count;
@@ -27,6 +26,7 @@ QueriesToDataBase(TransportCatalogue& db,
         }
         --count;
         std::string_view line_sv = Trim(line);
+
         // Number of queries
         if (IsIntNumber(line_sv)) {
             count = std::atoi(std::string(line_sv).data());
@@ -49,49 +49,12 @@ QueriesToDataBase(TransportCatalogue& db,
             auto name = Trim(tokens[0].substr(pos));
             // "Stop" has top priority to add.
             if (key == "Stop") {
-                auto values = Split(tokens[1], ',');
-                auto value_size = values.size();
-                if (value_size < 2) {
-                    continue;
-                }
-                double lat = 
-                std::atof(std::string(values[0]).data());
-                double lon = 
-                std::atof(std::string(values[1]).data());
-                // Add to data base
-                db.AddStop(name, lat, lon);
-                if (value_size < 3) {
-                    continue;
-                }
-                // Distances must be added after all "Stop" additions.
-                auto& from_stop = distances[std::string(name)];
-                for (int i = 2; i < value_size; ++i) {
-
-                    auto pos = values[i].find("to"sv);
-                    auto stop = std::string(Trim(values[i].substr(pos + 2)));
-                    int d = std::atoi(
-                            std::string(values[i].substr(0, pos)).data());
-                    from_stop.push_back({stop, d});
-                }
+                AddStopQuery(name, tokens[1], db, distances);
                 continue;
             }
             // "Bus" must be added after all "Stop" additions.
             if (key == "Bus") {
-                bool round_trip = 
-                    (tokens[1].find('-') != tokens[1].npos) ?
-                    true : false;
-                bool annular_trip = 
-                    (tokens[1].find('>') != tokens[1].npos) ?
-                    true : false;
-                if (!round_trip && !annular_trip) {
-                    continue;
-                }
-                char delimiter = annular_trip ? '>' : '-';
-                std::vector<std::string> values;
-                Split(tokens[1], delimiter, values, true);
-                // Add to buffer
-                buses[std::string(name)] = {annular_trip,
-                                             std::move(values)};
+                AddBusQuery(name, tokens[1], buses);
                 continue;
             }
             continue;
@@ -100,10 +63,10 @@ QueriesToDataBase(TransportCatalogue& db,
         // Database queries have last priority
         auto pos = line_sv.find(' ');
         if (pos == line_sv.npos) {
-            queries.push_back({std::string(line_sv), ""});
+            queries.push_back({GetQueryType(line_sv), ""});
             continue;
         }
-        queries.push_back({std::string(line_sv.substr(0, pos)),
+        queries.push_back({GetQueryType(line_sv.substr(0, pos)),
                            std::string(Trim(line_sv.substr(pos)))});
     }
 
@@ -118,6 +81,62 @@ QueriesToDataBase(TransportCatalogue& db,
     }
 
     return queries;
+}
+
+QueryType GetQueryType(std::string_view value) {
+    if (value == "Stop"sv) {
+        return QueryType::STOP;
+    }
+    if (value == "Bus"sv) {
+        return QueryType::BUS;
+    }
+    return QueryType::UNKNOWN;
+}
+
+void AddStopQuery(std::string_view name,
+                  std::string_view query,
+                  TransportCatalogue& db,
+                  std::unordered_map<std::string,
+                  std::vector<std::pair<std::string, int>>>&
+                  distances) {
+    auto values = Split(query, ',');
+    auto value_size = values.size();
+    if (value_size < 2) {
+        return;
+    }
+    // Add to data base
+    db.AddStop(name, std::atof(std::string(values[0]).data()),
+                     std::atof(std::string(values[1]).data()));
+    if (value_size < 3) {
+        return;
+    }
+    // Distances must be added after all "Stop" additions.
+    auto& from_stop = distances[std::string(name)];
+    for (int i = 2; i < value_size; ++i) {
+        auto pos = values[i].find("to"sv);
+        auto stop = std::string(Trim(values[i].substr(pos + 2)));
+        int d = std::atoi(std::string(values[i].substr(0, pos)).data());
+        from_stop.push_back({stop, d});
+    }
+}
+
+void AddBusQuery(std::string_view name,
+                 std::string_view query,
+                 std::unordered_map<std::string,
+                 std::pair<bool, std::vector<std::string>>>&
+                 buses) {
+    bool round_trip = (query.find('-') != query.npos) ?
+                       true : false;
+    bool annular_trip = (query.find('>') != query.npos) ?
+                         true : false;
+    if (!round_trip && !annular_trip) {
+        return;
+    }
+    char delimiter = annular_trip ? '>' : '-';
+    std::vector<std::string> values;
+    Split(query, delimiter, values, true);
+    // Add to buffer
+    buses[std::string(name)] = {annular_trip, std::move(values)};
 }
 
 bool IsIntNumber(std::string_view value) {

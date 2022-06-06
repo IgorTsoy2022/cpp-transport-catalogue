@@ -12,8 +12,6 @@
 
 namespace cat {
 
-const size_t PRIME_NUMBER = 37;
-
 struct STOP {
     std::string name;
     double latitude;
@@ -23,6 +21,17 @@ struct STOP {
 struct BUS {
     std::string name;
     std::vector<STOP*> stops;
+};
+
+enum class QueryType {
+    STOP,
+    BUS,
+    UNKNOWN
+};
+
+struct QUERY {
+    QueryType type;
+    std::string query;
 };
 
 struct BUS_Info {

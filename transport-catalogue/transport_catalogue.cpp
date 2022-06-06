@@ -2,6 +2,8 @@
 
 namespace cat {
 
+const size_t PRIME_NUMBER = 37;
+
 bool compare_BUS::operator()
      (const BUS* left, const BUS* right) const {
          return left->name < right->name;
