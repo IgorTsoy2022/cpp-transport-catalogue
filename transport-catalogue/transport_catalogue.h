@@ -40,18 +40,13 @@ struct STOP_Info {
 };
 
 struct compare_BUS final {
-    bool operator() (const BUS* left, const BUS* right) const {
-        return left->name < right->name;
-    }
+    bool operator() (const BUS* left, const BUS* right) const;
 };
 
 using set_BUS = std::set<BUS*, compare_BUS>;
 
 struct TwoStopsHasher {
-    size_t operator()(const std::pair<STOP*, STOP*> stops) const {
-        return reinterpret_cast<size_t>(stops.first)
-             + reinterpret_cast<size_t>(stops.second) * PRIME_NUMBER;
-    }
+    size_t operator()(const std::pair<STOP*, STOP*> stops) const;
 };
 
 class TransportCatalogue {

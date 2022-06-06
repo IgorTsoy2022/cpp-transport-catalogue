@@ -14,7 +14,8 @@ namespace cat {
 namespace queries {
 
 std::vector<std::pair<std::string, std::string>>
-QueriesToDataBase(TransportCatalogue& db);
+QueriesToDataBase(TransportCatalogue& db,
+                  std::istream& in = std::cin);
 
 bool IsIntNumber(std::string_view symbols);
 

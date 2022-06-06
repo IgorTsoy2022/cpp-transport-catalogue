@@ -2,6 +2,18 @@
 
 namespace cat {
 
+bool compare_BUS::operator()
+     (const BUS* left, const BUS* right) const {
+         return left->name < right->name;
+     }
+
+size_t TwoStopsHasher::operator()
+       (const std::pair<STOP*, STOP*> stops) const {
+           return reinterpret_cast<size_t>(stops.first) +
+                  reinterpret_cast<size_t>(stops.second) *
+                  PRIME_NUMBER;
+       }
+
 // public:
 
 void TransportCatalogue::AddStop(const std::string_view name,
