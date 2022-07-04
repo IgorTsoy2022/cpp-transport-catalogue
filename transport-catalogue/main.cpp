@@ -1,17 +1,14 @@
-#include "transport_catalogue.h"
-#include "input_reader.h"
-#include "stat_reader.h"
-
-#include <fstream>
-
-using namespace std::string_literals;
-using namespace std::string_view_literals;
+#include "json_reader.h"
+#include "request_handler.h"
 
 int main() {
 
-    cat::TransportCatalogue tc;
-    auto queries = cat::queries::QueriesToDataBase(tc);   
-    cat::print::Info(tc, queries, 6);
+    cat::TransportCatalogue db;
+    json::TransportCatalogueData tcd;
+    RequestHandler request_handler{ db, tcd };
+
+    tcd.LoadRequests(db, std::cin);
+    request_handler.JSONout(std::cout);
 
     return 0;
 }
