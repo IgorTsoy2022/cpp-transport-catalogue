@@ -10,34 +10,35 @@
 #include <vector>
 #include <unordered_map>
 
-namespace cat {
-namespace queries {
+namespace txt {
 
-std::vector<QUERY>
-QueriesToDataBase(TransportCatalogue& db,
-                  std::istream& in = std::cin);
-QueryType GetQueryType(std::string_view value);
-void AddStopQuery(std::string_view name,
-                  std::string_view query,
-                  TransportCatalogue& db,
-                  std::unordered_map<std::string,
-                  std::vector<std::pair<std::string, int>>>&
-                  distances);
-void AddBusQuery(std::string_view name,
-                 std::string_view query,
-                 std::unordered_map<std::string,
-                 std::pair<bool, std::vector<std::string>>>&
-                 buses);
+    using Distances =
+        std::unordered_map<std::string,
+        std::vector<std::pair<std::string, int>>>;
+    using Routes =
+        std::unordered_map<std::string,
+        std::pair<bool, std::vector<std::string>>>;
 
-bool IsIntNumber(std::string_view symbols);
+    std::vector<dom::QUERY>
+    QueriesToDataBase(cat::TransportCatalogue& db,
+                      std::istream& in = std::cin);
+    dom::QueryType GetQueryType(std::string_view value);
+    void LoadStops(std::string_view name,
+            std::string_view query,
+            cat::TransportCatalogue& db,
+            Distances& distances);
+    void LoadRoutes(std::string_view name,
+            std::string_view query,
+            Routes& routes);
 
-std::string_view Trim(std::string_view value);
+    bool IsIntNumber(std::string_view symbols);
 
-std::vector<std::string_view>
-Split(const std::string_view line, char delimiter,
-      bool trimmed = false);
-void Split(const std::string_view line, char delimiter,
-           std::vector<std::string>& tokens, bool trimmed = false);
+    std::string_view Trim(std::string_view value);
 
-} // namespace queries
-} // namespace cat
+    std::vector<std::string_view>
+    Split(const std::string_view line, char delimiter,
+              bool trimmed = false);
+    void Split(const std::string_view line, char delimiter,
+            std::vector<std::string>& tokens, bool trimmed = false);
+
+} // namespace txt

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "domain.h"
 #include "geo.h"
 
 #include <deque>
@@ -12,102 +13,78 @@
 
 namespace cat {
 
-struct STOP {
-    std::string name;
-    double latitude;
-    double longitude;
-};
+    struct BUScomp final {
+        bool operator() (const dom::BUS* left,
+            const dom::BUS* right) const;
+    };
 
-struct BUS {
-    std::string name;
-    std::vector<STOP*> stops;
-};
+    using SetBUS = std::set<dom::BUS*, BUScomp>;
 
-enum class QueryType {
-    STOP,
-    BUS,
-    UNKNOWN
-};
+    struct TwoStopsHasher {
+        size_t operator()(const std::pair<dom::STOP*,
+            dom::STOP*> stops) const;
+    };
 
-struct QUERY {
-    QueryType type;
-    std::string query;
-};
+    class TransportCatalogue {
+    public:
+        TransportCatalogue() = default;
 
-struct BUS_Info {
-    std::string name;
-    int route_stops;
-    int unique_stops;
-    int length;
-    double curvature;
-};
+        void AddStop(const std::string_view stop_name,
+            double latitude, double longitude);
+        void AddStop(const dom::STOP& stop);
 
-struct STOP_Info {
-    std::string name;
-    bool exists;
-    std::vector<BUS*> buses;
-};
+        void AddStopDistances(const std::string_view stop_name,
+            const std::vector<std::pair<std::string, int>>&
+            distances);
 
-struct compare_BUS final {
-    bool operator() (const BUS* left, const BUS* right) const;
-};
+        void AddBus(const std::string_view bus_name, bool is_annular,
+            const std::vector<std::string>& stop_names);
 
-using set_BUS = std::set<BUS*, compare_BUS>;
+        const dom::STOP* GetStop(
+            const std::string_view stop_name) const;
+        const dom::BUS* GetBus(
+            const std::string_view bus_name) const;
 
-struct TwoStopsHasher {
-    size_t operator()(const std::pair<STOP*, STOP*> stops) const;
-};
+        int DistanceBetweenStops(const std::string_view stop_name1,
+            const std::string_view stop_name2) const;
+        int DistanceBetweenStops(dom::STOP* stop1,
+            dom::STOP* stop2) const;
 
-class TransportCatalogue {
-public:
-    TransportCatalogue() = default;
+        double RouteGeoLength(
+            const std::string_view bus_name) const;
+        int RouteLength(const std::string_view bus_name) const;
 
-    void AddStop(const std::string_view name,
-                 double lat, double lon);
-    void AddStopDistances(const std::string_view name,
-                          const std::vector<std::pair<std::string, int>>&
-                          distances);
-    void AddBus(const std::string_view name, bool annular,
-                const std::vector<std::string>& stops);
+        const dom::BUSinfo GetBusInfo(
+            std::string_view bus_name) const;
 
-    const STOP* FindStop(const std::string_view name) const;
-    const BUS* FindBus(const std::string_view name) const;
+        const dom::STOPinfo GetStopInfo(
+            std::string_view stop_name) const;
 
-    int DistanceBetweenStops(const std::string_view stop1,
-                             const std::string_view stop2) const;
-    int DistanceBetweenStops(STOP* stop1, STOP* stop2) const;
+        const std::unordered_map<std::string_view, dom::STOP*>&
+            GetStops() const;
+        const std::unordered_map<std::string_view, dom::BUS*>&
+            GetBuses() const;
+        const std::unordered_map<dom::STOP*, SetBUS>&
+            GetStopBuses() const;
+        const std::unordered_map<std::pair<dom::STOP*, dom::STOP*>,
+            int, TwoStopsHasher>&
+            GetDistances() const;
 
-    double RouteGeoLength(const std::string_view name) const;
-    int RouteLength(const std::string_view name) const;
+        void Clear();
 
-    const BUS_Info
-    GetBusInfo(std::string_view name) const;
+    private:
+        std::deque<dom::STOP> stops_;
+        std::unordered_map<std::string_view, dom::STOP*>
+            stops_map_;
+        std::deque<dom::BUS> buses_;
+        std::unordered_map<std::string_view, dom::BUS*>
+            buses_map_;
 
-    const STOP_Info
-    GetStopInfo(std::string_view name) const;
+        std::unordered_map<dom::STOP*, SetBUS> stop_buses_map_;
+        std::unordered_map<std::pair<dom::STOP*, dom::STOP*>,
+            int, TwoStopsHasher> distances_;
 
-    const std::unordered_map<std::string_view, STOP*>&
-    GetStops() const;
-    const std::unordered_map<std::string_view, BUS*>&
-    GetBuses() const;
-    const std::unordered_map<STOP*, set_BUS>&
-    GetStopBuses() const;
-    const std::unordered_map<std::pair<STOP*, STOP*>, int, TwoStopsHasher>&
-    GetDistances() const;
-
-    void Clear();
-
-private:
-    std::deque<STOP> stops_;
-    std::unordered_map<std::string_view, STOP*> stops_map_;
-    std::deque<BUS> buses_;
-    std::unordered_map<std::string_view, BUS*> buses_map_;
-
-    std::unordered_map<STOP*, set_BUS> stop_buses_map_;
-    std::unordered_map<std::pair<STOP*, STOP*>, int, TwoStopsHasher>
-    distances_;
-
-    void InsertBusesToStop(BUS* bus);
-};
+        void InsertBusesToStop(dom::BUS* bus);
+    };
 
 } // namespace cat

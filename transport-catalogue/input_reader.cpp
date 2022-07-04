@@ -1,222 +1,206 @@
 #include "input_reader.h"
 
-using namespace std::string_view_literals;
+namespace txt {
 
-const std::string_view WHITESPACE = " \f\n\r\t\v"sv;
+    using namespace std::string_view_literals;
 
-namespace cat {
-namespace queries {
- 
-std::vector<QUERY>
-QueriesToDataBase(TransportCatalogue& db,
-                  std::istream& in) {
-    std::unordered_map<std::string,
-        std::vector<std::pair<std::string, int>>> distances;
-    std::unordered_map<std::string,
-        std::pair<bool, std::vector<std::string>>> buses;
-    std::vector<QUERY> queries;
-    std::string line;
-    int count = 0;
-    in >> count;
-    ++count;
-    while (count > 0) {
-        std::getline(in, line);
-        if (line.size() == 0) {
-            continue;
-        }
-        --count;
-        std::string_view line_sv = Trim(line);
+    const std::string_view WHITESPACE = " \f\n\r\t\v"sv;
 
-        // Number of queries
-        if (IsIntNumber(line_sv)) {
-            count = std::atoi(std::string(line_sv).data());
-            continue;
-        }
+    std::vector<dom::QUERY>
+    QueriesToDataBase(cat::TransportCatalogue& db,
+                      std::istream& in) {
+        Distances distances;
+        Routes buses;
+        std::vector<dom::QUERY> queries;
+        std::string line;
+        int count = 0;
+        int id = 0;
+        in >> count;
+        ++count;
+        while (count > 0) {
+            std::getline(in, line);
+            if (line.size() == 0) {
+                continue;
+            }
+            --count;
+            std::string_view line_sv = Trim(line);
 
-        // Queries to add
-        if (line_sv.find(':') != line_sv.npos) {
-            auto tokens = Split(line_sv, ':');
-            if (tokens.size() < 2) {
+            // Number of queries
+            if (IsIntNumber(line_sv)) {
+                count = std::atoi(std::string(line_sv).data());
                 continue;
             }
 
-            auto pos = tokens[0].find(' ');
-            if (pos == tokens[0].npos) {
+            // Queries to add
+            if (line_sv.find(':') != line_sv.npos) {
+                auto tokens = Split(line_sv, ':');
+                if (tokens.size() < 2) {
+                    continue;
+                }
+                
+                auto pos = tokens[0].find(' ');
+                if (pos == std::string_view::npos) {
+                    continue;
+                }
+
+                auto key = tokens[0].substr(0, pos);
+                auto name = Trim(tokens[0].substr(pos));
+                // "Stop" has top priority to add.
+                if (key == "Stop"sv) {
+                    LoadStops(name, tokens[1], db, distances);
+                    continue;
+                }
+                // "Bus" must be added after all "Stop" additions.
+                if (key == "Bus"sv) {
+                    LoadRoutes(name, tokens[1], buses);
+                    continue;
+                }
                 continue;
             }
 
-            auto key = tokens[0].substr(0, pos);
-            auto name = Trim(tokens[0].substr(pos));
-            // "Stop" has top priority to add.
-            if (key == "Stop") {
-                AddStopQuery(name, tokens[1], db, distances);
-                continue;
+            // Database queries have last priority
+            dom::QUERY query;
+            query.id = ++id;
+            auto pos = line_sv.find(' ');
+            if (pos == line_sv.npos) {
+                query.type = GetQueryType(line_sv);
             }
-            // "Bus" must be added after all "Stop" additions.
-            if (key == "Bus") {
-                AddBusQuery(name, tokens[1], buses);
-                continue;
+            else {
+                query.type = GetQueryType(line_sv.substr(0, pos));
+                query.name = 
+                    std::move(std::string(Trim(line_sv.substr(pos))));
             }
-            continue;
+            queries.push_back(std::move(query));
         }
 
-        // Database queries have last priority
-        auto pos = line_sv.find(' ');
-        if (pos == line_sv.npos) {
-            queries.push_back({GetQueryType(line_sv), ""});
-            continue;
+        // Add Distances to database
+        for (auto& [key, stops] : distances) {
+            db.AddStopDistances(key, std::move(stops));
         }
-        queries.push_back({GetQueryType(line_sv.substr(0, pos)),
-                           std::string(Trim(line_sv.substr(pos)))});
+
+        // Add "Bus" to database
+        for (auto& [key, stops] : buses) {
+            db.AddBus(key, stops.first, std::move(stops.second));
+        }
+
+        return queries;
     }
 
-    // Add Distances to database
-    for (auto& [key, stops] : distances) {
-        db.AddStopDistances(key, std::move(stops));
+    dom::QueryType GetQueryType(std::string_view value) {
+        if (value == "Stop"sv) {
+            return dom::QueryType::STOP;
+        }
+        if (value == "Bus"sv) {
+            return dom::QueryType::BUS;
+        }
+        return dom::QueryType::UNKNOWN;
     }
 
-    // Add "Bus" to database
-    for (auto& [key, stops] : buses) {
-        db.AddBus(key, stops.first, std::move(stops.second));
+    void LoadStops(std::string_view name,
+        std::string_view query,
+        cat::TransportCatalogue& db,
+        Distances& distances) {
+        auto values = Split(query, ',');
+        auto value_size = values.size();
+        if (value_size < 2) {
+            return;
+        }
+        // Add to data base
+        db.AddStop(name, std::atof(std::string(values[0]).data()),
+            std::atof(std::string(values[1]).data()));
+        if (value_size < 3) {
+            return;
+        }
+        // Distances must be added after all "Stop" additions.
+        auto& from_stop = distances[std::string(name)];
+        for (int i = 2; i < value_size; ++i) {
+            auto pos = values[i].find("to"sv);
+            auto stop = std::string(Trim(values[i].substr(pos + 2)));
+            int d = std::atoi(std::string(values[i].substr(0, pos)).data());
+            from_stop.push_back({ stop, d });
+        }
     }
 
-    return queries;
-}
-
-QueryType GetQueryType(std::string_view value) {
-    if (value == "Stop"sv) {
-        return QueryType::STOP;
-    }
-    if (value == "Bus"sv) {
-        return QueryType::BUS;
-    }
-    return QueryType::UNKNOWN;
-}
-
-void AddStopQuery(std::string_view name,
-                  std::string_view query,
-                  TransportCatalogue& db,
-                  std::unordered_map<std::string,
-                  std::vector<std::pair<std::string, int>>>&
-                  distances) {
-    auto values = Split(query, ',');
-    auto value_size = values.size();
-    if (value_size < 2) {
-        return;
-    }
-    // Add to data base
-    db.AddStop(name, std::atof(std::string(values[0]).data()),
-                     std::atof(std::string(values[1]).data()));
-    if (value_size < 3) {
-        return;
-    }
-    // Distances must be added after all "Stop" additions.
-    auto& from_stop = distances[std::string(name)];
-    for (int i = 2; i < value_size; ++i) {
-        auto pos = values[i].find("to"sv);
-        auto stop = std::string(Trim(values[i].substr(pos + 2)));
-        int d = std::atoi(std::string(values[i].substr(0, pos)).data());
-        from_stop.push_back({stop, d});
-    }
-}
-
-void AddBusQuery(std::string_view name,
-                 std::string_view query,
-                 std::unordered_map<std::string,
-                 std::pair<bool, std::vector<std::string>>>&
-                 buses) {
-    bool round_trip = (query.find('-') != query.npos) ?
-                       true : false;
-    bool annular_trip = (query.find('>') != query.npos) ?
-                         true : false;
-    if (!round_trip && !annular_trip) {
-        return;
-    }
-    char delimiter = annular_trip ? '>' : '-';
-    std::vector<std::string> values;
-    Split(query, delimiter, values, true);
-    // Add to buffer
-    buses[std::string(name)] = {annular_trip, std::move(values)};
-}
-
-bool IsIntNumber(std::string_view value) {
-    if (value.empty()) {
-        return false;
-    }
-    std::string_view::const_iterator
-    start = value.cbegin();
-    if (value[0] == '+' || value[0] == '-') {
-        ++start;
+    void LoadRoutes(std::string_view name,
+        std::string_view query,
+        Routes& buses) {
+        bool round_trip = (query.find('-') != query.npos) ?
+            true : false;
+        bool annular_trip = (query.find('>') != query.npos) ?
+            true : false;
+        if (!round_trip && !annular_trip) {
+            return;
+        }
+        char delimiter = annular_trip ? '>' : '-';
+        std::vector<std::string> values;
+        Split(query, delimiter, values, true);
+        // Add to buffer
+        buses[std::string(name)] = { annular_trip, std::move(values) };
     }
 
-    return std::all_of(start, value.cend(),
-                       [](const char &c) {
-                           return std::isdigit(c);
-    });
-}
+    bool IsIntNumber(std::string_view value) {
+        if (value.empty()) {
+            return false;
+        }
+        std::string_view::const_iterator
+            start = value.cbegin();
+        if (value[0] == '+' || value[0] == '-') {
+            ++start;
+        }
 
-std::string_view Trim(std::string_view value) {
-    if (value.empty()) {
+        return std::all_of(start, value.cend(),
+            [](const char& c) {
+                return std::isdigit(c);
+            });
+    }
+
+    std::string_view Trim(std::string_view value) {
+        if (value.empty()) {
+            return value;
+        }
+
+        auto pos = value.find_first_not_of(WHITESPACE);
+        if (pos == value.npos || pos > value.size()) {
+            return std::string_view();
+        }
+        value.remove_prefix(pos);
+
+        pos = value.find_last_not_of(WHITESPACE);
+        if (pos < value.size() + 1) {
+            value.remove_suffix(value.size() - pos - 1);
+        }
+
         return value;
     }
 
-    auto pos = value.find_first_not_of(WHITESPACE);
-    if (pos == value.npos || pos > value.size()) {
-        return std::string_view();
+    std::vector<std::string_view>
+        Split(const std::string_view line, char delimiter, bool trimmed) {
+        std::vector<std::string_view> tokens;
+        size_t start;
+        size_t end = 0;
+        while ((start = line.find_first_not_of(delimiter, end))
+            != line.npos) {
+            end = line.find(delimiter, start);
+            std::string_view token = trimmed ?
+                Trim(line.substr(start, end - start)) :
+                line.substr(start, end - start);
+            tokens.push_back(token);
+        }
+        return tokens;
     }
-    value.remove_prefix(pos);
 
-    pos = value.find_last_not_of(WHITESPACE);
-    if (pos < value.size() + 1) {
-        value.remove_suffix(value.size() - pos - 1);
+    void Split(const std::string_view line, char delimiter,
+        std::vector<std::string>& tokens, bool trimmed) {
+        size_t start;
+        size_t end = 0;
+        while ((start = line.find_first_not_of(delimiter, end))
+            != line.npos) {
+            end = line.find(delimiter, start);
+            std::string token = trimmed ?
+                std::string(Trim(line.substr(start, end - start))) :
+                std::string(line.substr(start, end - start));
+            tokens.push_back(std::move(token));
+        }
     }
 
-    return value;
-}
-
-std::vector<std::string_view>
-Split(const std::string_view line, char delimiter, bool trimmed) {
-    std::vector<std::string_view> tokens;
-    size_t start;
-    size_t end = 0;
-    while ((start = line.find_first_not_of(delimiter, end))
-           != line.npos) {
-        end = line.find(delimiter, start);
-        std::string_view token = trimmed ?
-            Trim(line.substr(start, end - start)) :
-            line.substr(start, end - start);
-        tokens.push_back(token);
-    }
-    return tokens;
-}
-
-void Split(const std::string_view line, char delimiter,
-           std::vector<std::string>& tokens, bool trimmed) {
-    size_t start;
-    size_t end = 0;
-    while ((start = line.find_first_not_of(delimiter, end))
-           != line.npos) {
-        end = line.find(delimiter, start);
-        std::string token = trimmed ?
-            std::string(Trim(line.substr(start, end - start))) :
-            std::string(line.substr(start, end - start));
-        tokens.push_back(std::move(token));
-    }
-}
-
-/*
-std::vector<std::string>
-Split(const std::string& line, char delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::stringstream ss;
-    ss.str(line);
-    while (std::getline(ss, token, delimiter)) {
-      tokens.push_back(token);
-    }
-    return tokens;
-}
-*/
-
-} // namespace queries
-} // namespace cat
+} // namespace txt
