@@ -21,16 +21,7 @@
      RequestHandler(const cat::TransportCatalogue& db,
          const json::TransportCatalogueData& loaded);
 
-     svg::Document RenderMap();
-
-     const std::vector<dom::QUERY>& GetRequests() const;
-
      void JSONout(std::ostream& out);
-
- //    const std::unordered_map<std::string_view, dom::BUS*>&
- //    GetBuses() const;
-
- //    const svg::RouteMapSettings& GetMapRouteSettings() const;
 
 /*
      // Возвращает маршруты, проходящие через
@@ -43,39 +34,6 @@
      // "Транспортный Справочник" и "Визуализатор Карты"
      const cat::TransportCatalogue& db_;
      const json::TransportCatalogueData& loaded_;
-
-     std::set<std::string_view> route_names_;
-     std::map<std::string_view, svg::Point>
-         stop_map_coords_;
-
-     void SetStopMapCoords(double width, double height,
-         double padding);
-
-     svg::Polyline CreateRoute(const dom::BUS* bus,
-         const svg::Color& fill_color,
-         const svg::Color& stroke_color,
-         const double stroke_width,
-         const svg::StrokeLineCap stroke_line_cap,
-         const svg::StrokeLineJoin stroke_line_join) const;
-
-     svg::Text BaseText(const std::string_view name,
-         const svg::Point& coords,
-         const svg::Point& offset,
-         const int font_size,
-         const std::string& font_family,
-         const std::string& font_weight) const;
-     svg::Text BaseText(const std::string_view name,
-         const svg::Point& coords,
-         const svg::Point& offset,
-         const int font_size,
-         const std::string& font_family) const;
-
-     svg::Text Substrate(const svg::Text& base_text,
-         const svg::Color& fill_color,
-         const svg::Color& stroke_color,
-         const double stroke_width) const;
-     svg::Text Caption(const svg::Text& base_text,
-                       const svg::Color& fill_color) const;
  };
  
 namespace cat {

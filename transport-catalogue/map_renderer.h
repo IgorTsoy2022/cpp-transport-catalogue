@@ -2,8 +2,10 @@
 
 #include "geo.h"
 #include "svg.h"
+#include "transport_catalogue.h"
 
 #include <algorithm>
+#include <map>
 
 namespace svg {
 
@@ -131,5 +133,8 @@ namespace svg {
     private:
         svg::Text text_;
     };
+
+    svg::Document RenderMap(const cat::TransportCatalogue& db,
+        const svg::RouteMapSettings& route_map_settings);
 
 } // namespace svg
