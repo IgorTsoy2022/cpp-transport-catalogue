@@ -27,11 +27,11 @@ namespace json {
         void LoadRequests(cat::TransportCatalogue& db,
             std::istream& in = std::cin);
 
-        const std::vector<dom::QUERY>& GetRequests() const;
+        const std::vector<dom::Query>& GetRequests() const;
         const svg::RouteMapSettings& GetRouteMapSettings() const;
 
     private:
-        std::vector<dom::QUERY> stat_requests_;
+        std::vector<dom::Query> stat_requests_;
         svg::RouteMapSettings route_map_settings_;
 
         void LoadStops(const Dict& request,

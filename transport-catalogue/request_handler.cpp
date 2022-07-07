@@ -75,7 +75,7 @@ void RequestHandler::JSONout(std::ostream& out) {
 namespace cat {
 
     void TXTout(const cat::TransportCatalogue& db,
-        const std::vector<dom::QUERY>& requests,
+        const std::vector<dom::Query>& requests,
         int precision, std::ostream& out) {
         for (const auto& request : requests) {
             if (request.type == dom::QueryType::BUS) {
@@ -92,7 +92,7 @@ namespace cat {
         }
     }
 
-    void BusInfo(const dom::BUSinfo& bus_info, int precision,
+    void BusInfo(const dom::BusInfo& bus_info, int precision,
         std::ostream& out) {
         out << std::setprecision(precision)
             << "Bus "sv << bus_info.name << ": "sv;
@@ -108,7 +108,7 @@ namespace cat {
         out << std::endl;
     }
 
-    void StopInfo(const dom::STOPinfo& stop_info, std::ostream& out) {
+    void StopInfo(const dom::StopInfo& stop_info, std::ostream& out) {
         out << "Stop "sv << stop_info.name << ": "sv;
         if (stop_info.exists) {
             if (stop_info.buses.size() > 0) {

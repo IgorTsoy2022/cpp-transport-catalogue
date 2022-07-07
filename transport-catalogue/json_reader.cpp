@@ -62,7 +62,7 @@ namespace json {
         }
     }
 
-    const std::vector<dom::QUERY>&
+    const std::vector<dom::Query>&
         TransportCatalogueData::GetRequests() const {
         return stat_requests_;
     }
@@ -77,7 +77,7 @@ namespace json {
         if (request.count("name"s) == 0) {
             throw std::runtime_error("Name of stop not found"s);
         }
-        dom::STOP stop;
+        dom::Stop stop;
         stop.name = request.at("name"s).AsString();
         if (request.count("latitude"s) > 0 &&
             request.count("longitude"s) > 0) {
@@ -128,7 +128,7 @@ namespace json {
                     "Type of request not found"s);
             }
 
-            dom::QUERY query;
+            dom::Query query;
 
             const std::string_view
                 request_type = request.at("type"s).AsString();

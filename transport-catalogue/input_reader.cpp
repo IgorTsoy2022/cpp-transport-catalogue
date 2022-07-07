@@ -6,12 +6,12 @@ namespace txt {
 
     const std::string_view WHITESPACE = " \f\n\r\t\v"sv;
 
-    std::vector<dom::QUERY>
+    std::vector<dom::Query>
     QueriesToDataBase(cat::TransportCatalogue& db,
                       std::istream& in) {
         Distances distances;
         Routes buses;
-        std::vector<dom::QUERY> queries;
+        std::vector<dom::Query> queries;
         std::string line;
         int count = 0;
         int id = 0;
@@ -59,7 +59,7 @@ namespace txt {
             }
 
             // Database queries have last priority
-            dom::QUERY query;
+            dom::Query query;
             query.id = ++id;
             auto pos = line_sv.find(' ');
             if (pos == line_sv.npos) {

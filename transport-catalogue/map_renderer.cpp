@@ -30,7 +30,7 @@ namespace svg {
         std::map<std::string_view, svg::Point> coords;
 
         std::vector<geo::Coordinates> geo_coords;
-        std::unordered_set<dom::STOP*> stops;
+        std::unordered_set<dom::Stop*> stops;
         for (const auto& [bus_name, bus] : db.GetBuses()) {
             for (const auto& stop : bus->stops) {
                 sortered_bus_names.insert(bus_name);
@@ -55,7 +55,7 @@ namespace svg {
         return coords;
     }
 
-    svg::Polyline CreateRoute(const dom::BUS* bus,
+    svg::Polyline CreateRoute(const dom::Bus* bus,
         const std::map<std::string_view, svg::Point>& stop_coords,
         const svg::Color& fill_color,
         const svg::Color& stroke_color,

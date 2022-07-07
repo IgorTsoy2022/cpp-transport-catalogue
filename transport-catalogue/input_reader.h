@@ -19,7 +19,7 @@ namespace txt {
         std::unordered_map<std::string,
         std::pair<bool, std::vector<std::string>>>;
 
-    std::vector<dom::QUERY>
+    std::vector<dom::Query>
     QueriesToDataBase(cat::TransportCatalogue& db,
                       std::istream& in = std::cin);
     dom::QueryType GetQueryType(std::string_view value);

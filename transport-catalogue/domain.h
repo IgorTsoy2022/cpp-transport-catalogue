@@ -5,21 +5,21 @@
 
 namespace dom {
 
-    struct BUS;
+    struct Bus;
 
-    struct STOP {
+    struct Stop {
         std::string name;
         double latitude = 0.0;
         double longitude = 0.0;
     };
 
-    struct BUS {
+    struct Bus {
         std::string name;
         bool is_annular = false;
-        std::vector<STOP*> stops;
+        std::vector<Stop*> stops;
     };
 
-    struct BUSinfo {
+    struct BusInfo {
         std::string name;
         int route_stops = 0;
         int unique_stops = 0;
@@ -27,10 +27,10 @@ namespace dom {
         double curvature = 0.0;
     };
 
-    struct STOPinfo {
+    struct StopInfo {
         std::string name;
         bool exists = false;
-        std::vector<BUS*> buses;
+        std::vector<Bus*> buses;
     };
 
     enum class QueryType {
@@ -40,7 +40,7 @@ namespace dom {
         UNKNOWN
     };
 
-    struct QUERY {
+    struct Query {
         QueryType type = QueryType::UNKNOWN;
         int id = 0;
         std::string name;

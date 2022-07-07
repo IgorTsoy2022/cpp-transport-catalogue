@@ -39,12 +39,12 @@
 namespace cat {
 
     void TXTout(const cat::TransportCatalogue& db, 
-        const std::vector<dom::QUERY>& requests,
+        const std::vector<dom::Query>& requests,
         int precision = 9, std::ostream& out = std::cout);
 
-    void BusInfo(const dom::BUSinfo& bus_info,
+    void BusInfo(const dom::BusInfo& bus_info,
         int precision = 9, std::ostream& out = std::cout);
-    void StopInfo(const dom::STOPinfo& stop_info,
+    void StopInfo(const dom::StopInfo& stop_info,
         std::ostream& out = std::cout);
 
     void Stops(const TransportCatalogue& db,
