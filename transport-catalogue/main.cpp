@@ -10,8 +10,9 @@ int main() {
 
     cat::TransportCatalogue db;
     json::TransportCatalogueData tcd;
+    svg::MapRenderer mr;
 
-    RequestHandler request_handler{ db, tcd };
+    RequestHandler request_handler{ db, tcd, mr };
 
     tcd.LoadRequests(db, std::cin);
 
@@ -25,15 +26,14 @@ int main() {
         cat::TXTout(db, requests, 6, std::cout);
         txtfile.close();
     }
-*/
 
-/*
     std::ifstream jsonfile1("C:\\CPP\\Yandex.Cpp\\Sprint_10\\testJSONin15-3.txt"s);
     if (jsonfile1.is_open()) {
         cat::TransportCatalogue db;
         json::TransportCatalogueData tcd;
+        svg::MapRenderer mr;
 
-        RequestHandler request_handler{ db, tcd };
+        RequestHandler request_handler{ db, tcd, mr };
 
         tcd.LoadRequests(db, jsonfile1);
         jsonfile1.close();
@@ -48,7 +48,7 @@ int main() {
 
         std::ofstream outfile1("C:\\CPP\\Yandex.Cpp\\Sprint_10\\testJSONout15-3.svg"s);
         if (outfile1.is_open()) {
-            svg::RenderMap(db, tcd.GetRouteMapSettings()).Render(outfile1);
+            request_handler.RenderMap(outfile1);
             outfile1.close();
         }
     }

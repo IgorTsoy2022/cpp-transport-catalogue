@@ -1,9 +1,11 @@
 #include "request_handler.h"
 
 RequestHandler::RequestHandler(const cat::TransportCatalogue& db,
-    const json::TransportCatalogueData& loaded)
+    const json::TransportCatalogueData& loaded,
+    svg::MapRenderer& map_renderer)
     : db_(db)
     , loaded_(loaded)
+    , map_renderer_(map_renderer)
 {}
 
 using namespace std::literals;
@@ -59,8 +61,7 @@ void RequestHandler::JSONout(std::ostream& out) {
         }
         else if (request.type == dom::QueryType::MAP) {
             std::ostringstream map_stream;
-            svg::RenderMap(db_, loaded_.GetRouteMapSettings())
-                .Render(map_stream);
+            RenderMap(map_stream);
             blocks["map"s] = std::move(json::Node(map_stream.str()));
         }
 
@@ -70,6 +71,10 @@ void RequestHandler::JSONout(std::ostream& out) {
 
     json::Document doc{ std::move(json::Node(root)) };
     json::Print(doc, out);
+}
+
+void RequestHandler::RenderMap(std::ostream& out) {
+    map_renderer_.RenderMap(db_, loaded_.GetRouteMapSettings()).Render(out);
 }
 
 namespace cat {

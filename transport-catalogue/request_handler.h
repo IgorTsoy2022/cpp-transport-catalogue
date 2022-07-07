@@ -19,9 +19,11 @@
  public:
 
      RequestHandler(const cat::TransportCatalogue& db,
-         const json::TransportCatalogueData& loaded);
+         const json::TransportCatalogueData& loaded,
+         svg::MapRenderer& map_renderer);
 
      void JSONout(std::ostream& out);
+     void RenderMap(std::ostream& out);
 
 /*
      // Возвращает маршруты, проходящие через
@@ -34,6 +36,7 @@
      // "Транспортный Справочник" и "Визуализатор Карты"
      const cat::TransportCatalogue& db_;
      const json::TransportCatalogueData& loaded_;
+     svg::MapRenderer& map_renderer_;
  };
  
 namespace cat {

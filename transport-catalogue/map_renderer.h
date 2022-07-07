@@ -134,7 +134,42 @@ namespace svg {
         svg::Text text_;
     };
 
-    svg::Document RenderMap(const cat::TransportCatalogue& db,
-        const svg::RouteMapSettings& route_map_settings);
+    class MapRenderer {
+    public:
 
+        svg::Document RenderMap(const cat::TransportCatalogue& db,
+            const svg::RouteMapSettings& route_map_settings);
+
+    private:
+        std::map<std::string_view, svg::Point>
+        StopCoords(const cat::TransportCatalogue& db,
+            const svg::RouteMapSettings& route_map_settings,
+            std::set<std::string_view>& sortered_bus_names);
+
+        svg::Polyline CreateRoute(const dom::Bus* bus,
+            const std::map<std::string_view, svg::Point>& stop_coords,
+            const svg::Color& fill_color,
+            const svg::Color& stroke_color,
+            const double stroke_width,
+            const svg::StrokeLineCap stroke_line_cap,
+            const svg::StrokeLineJoin stroke_line_join);
+        svg::Text BaseText(const std::string_view name,
+            const svg::Point& coords,
+            const svg::Point& offset,
+            const int font_size,
+            const std::string& font_family,
+            const std::string& font_weight);
+        svg::Text BaseText(const std::string_view name,
+            const svg::Point& coords,
+            const svg::Point& offset,
+            const int font_size,
+            const std::string& font_family);
+        svg::Text Substrate(const svg::Text& base_text,
+            const svg::Color& fill_color,
+            const svg::Color& stroke_color,
+            const double stroke_width);
+        svg::Text Caption(const svg::Text& base_text,
+            const svg::Color& fill_color);
+
+    };
 } // namespace svg

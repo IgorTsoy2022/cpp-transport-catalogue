@@ -22,118 +22,11 @@ namespace svg {
     }
 
 
-    std::map<std::string_view, svg::Point>
-    StopCoords(const cat::TransportCatalogue& db,
-        const svg::RouteMapSettings& route_map_settings,
-        std::set<std::string_view>& sortered_bus_names) {
-
-        std::map<std::string_view, svg::Point> coords;
-
-        std::vector<geo::Coordinates> geo_coords;
-        std::unordered_set<dom::Stop*> stops;
-        for (const auto& [bus_name, bus] : db.GetBuses()) {
-            for (const auto& stop : bus->stops) {
-                sortered_bus_names.insert(bus_name);
-                stops.insert(stop);
-                geo_coords.push_back({ stop->latitude,
-                                            stop->longitude });
-            }
-        }
-
-        const svg::SphereProjector proj{
-            geo_coords.begin(), geo_coords.end(),
-            route_map_settings.width, route_map_settings.height,
-            route_map_settings.padding
-        };
-        geo_coords.clear();
-
-        for (const auto& stop : stops) {
-            coords[stop->name]
-                = proj({ stop->latitude, stop->longitude });
-        }
-
-        return coords;
-    }
-
-    svg::Polyline CreateRoute(const dom::Bus* bus,
-        const std::map<std::string_view, svg::Point>& stop_coords,
-        const svg::Color& fill_color,
-        const svg::Color& stroke_color,
-        const double stroke_width,
-        const svg::StrokeLineCap stroke_line_cap,
-        const svg::StrokeLineJoin stroke_line_join) {
-
-        svg::Polyline polyline;
-
-        for (const auto& stop : bus->stops) {
-            polyline.AddPoint(stop_coords.at(stop->name));
-        }
-
-        if (!bus->is_annular) {
-            for (auto it = bus->stops.rbegin() + 1;
-                it != bus->stops.rend(); ++it) {
-                polyline.AddPoint(stop_coords.at((*it)->name));
-            }
-        }
-
-        polyline.SetFillColor(fill_color)
-            .SetStrokeColor(stroke_color)
-            .SetStrokeWidth(stroke_width)
-            .SetStrokeLineCap(stroke_line_cap)
-            .SetStrokeLineJoin(stroke_line_join);
-
-        return polyline;
-    }
-
-    svg::Text BaseText(const std::string_view name,
-        const svg::Point& coords,
-        const svg::Point& offset,
-        const int font_size,
-        const std::string& font_family,
-        const std::string& font_weight) {
-        return svg::Text()
-            .SetPosition(coords)
-            .SetOffset(offset)
-            .SetFontSize(font_size)
-            .SetFontFamily(font_family)
-            .SetFontWeight(font_weight)
-            .SetData(std::string(name));
-    }
-
-    svg::Text BaseText(const std::string_view name,
-        const svg::Point& coords,
-        const svg::Point& offset,
-        const int font_size,
-        const std::string& font_family) {
-        return svg::Text()
-            .SetPosition(coords)
-            .SetOffset(offset)
-            .SetFontSize(font_size)
-            .SetFontFamily(font_family)
-            .SetData(std::string(name));
-    }
-
-    svg::Text Substrate(const svg::Text& base_text,
-        const svg::Color& fill_color,
-        const svg::Color& stroke_color,
-        const double stroke_width) {
-        return svg::Text{ base_text }
-            .SetFillColor(fill_color)
-            .SetStrokeColor(stroke_color)
-            .SetStrokeWidth(stroke_width)
-            .SetStrokeLineCap(svg::StrokeLineCap::ROUND)
-            .SetStrokeLineJoin(svg::StrokeLineJoin::ROUND);
-    }
-
-    svg::Text Caption(const svg::Text& base_text,
-        const svg::Color& fill_color) {
-        return svg::Text{ base_text }
-        .SetFillColor(fill_color);
-    }
 
     using namespace std::literals;
 
-    svg::Document RenderMap(const cat::TransportCatalogue& db,
+    svg::Document MapRenderer::RenderMap(
+        const cat::TransportCatalogue& db,
         const svg::RouteMapSettings& route_map_settings) {
 
         std::set<std::string_view> sortered_bus_names;
@@ -233,6 +126,115 @@ namespace svg {
         DrawPicture(text_container, doc);
 
         return doc;
+    }
+
+    std::map<std::string_view, svg::Point>
+        MapRenderer::StopCoords(const cat::TransportCatalogue& db,
+            const svg::RouteMapSettings& route_map_settings,
+            std::set<std::string_view>& sortered_bus_names) {
+
+        std::map<std::string_view, svg::Point> coords;
+
+        std::vector<geo::Coordinates> geo_coords;
+        std::unordered_set<dom::Stop*> stops;
+        for (const auto& [bus_name, bus] : db.GetBuses()) {
+            for (const auto& stop : bus->stops) {
+                sortered_bus_names.insert(bus_name);
+                stops.insert(stop);
+                geo_coords.push_back({ stop->latitude,
+                                            stop->longitude });
+            }
+        }
+
+        const svg::SphereProjector proj{
+            geo_coords.begin(), geo_coords.end(),
+            route_map_settings.width, route_map_settings.height,
+            route_map_settings.padding
+        };
+        geo_coords.clear();
+
+        for (const auto& stop : stops) {
+            coords[stop->name]
+                = proj({ stop->latitude, stop->longitude });
+        }
+
+        return coords;
+    }
+
+    svg::Polyline MapRenderer::CreateRoute(const dom::Bus* bus,
+        const std::map<std::string_view, svg::Point>& stop_coords,
+        const svg::Color& fill_color,
+        const svg::Color& stroke_color,
+        const double stroke_width,
+        const svg::StrokeLineCap stroke_line_cap,
+        const svg::StrokeLineJoin stroke_line_join) {
+
+        svg::Polyline polyline;
+
+        for (const auto& stop : bus->stops) {
+            polyline.AddPoint(stop_coords.at(stop->name));
+        }
+
+        if (!bus->is_annular) {
+            for (auto it = bus->stops.rbegin() + 1;
+                it != bus->stops.rend(); ++it) {
+                polyline.AddPoint(stop_coords.at((*it)->name));
+            }
+        }
+
+        polyline.SetFillColor(fill_color)
+            .SetStrokeColor(stroke_color)
+            .SetStrokeWidth(stroke_width)
+            .SetStrokeLineCap(stroke_line_cap)
+            .SetStrokeLineJoin(stroke_line_join);
+
+        return polyline;
+    }
+
+    svg::Text MapRenderer::BaseText(const std::string_view name,
+        const svg::Point& coords,
+        const svg::Point& offset,
+        const int font_size,
+        const std::string& font_family,
+        const std::string& font_weight) {
+        return svg::Text()
+            .SetPosition(coords)
+            .SetOffset(offset)
+            .SetFontSize(font_size)
+            .SetFontFamily(font_family)
+            .SetFontWeight(font_weight)
+            .SetData(std::string(name));
+    }
+
+    svg::Text MapRenderer::BaseText(const std::string_view name,
+        const svg::Point& coords,
+        const svg::Point& offset,
+        const int font_size,
+        const std::string& font_family) {
+        return svg::Text()
+            .SetPosition(coords)
+            .SetOffset(offset)
+            .SetFontSize(font_size)
+            .SetFontFamily(font_family)
+            .SetData(std::string(name));
+    }
+
+    svg::Text MapRenderer::Substrate(const svg::Text& base_text,
+        const svg::Color& fill_color,
+        const svg::Color& stroke_color,
+        const double stroke_width) {
+        return svg::Text{ base_text }
+            .SetFillColor(fill_color)
+            .SetStrokeColor(stroke_color)
+            .SetStrokeWidth(stroke_width)
+            .SetStrokeLineCap(svg::StrokeLineCap::ROUND)
+            .SetStrokeLineJoin(svg::StrokeLineJoin::ROUND);
+    }
+
+    svg::Text MapRenderer::Caption(const svg::Text& base_text,
+        const svg::Color& fill_color) {
+        return svg::Text{ base_text }
+        .SetFillColor(fill_color);
     }
 
 
