@@ -21,8 +21,6 @@ namespace svg {
         container.Add(text_);
     }
 
-
-
     using namespace std::literals;
 
     svg::Document MapRenderer::RenderMap(
@@ -31,7 +29,7 @@ namespace svg {
 
         std::set<std::string_view> sortered_bus_names;
 
-        std::map<std::string_view, svg::Point> stop_coords 
+        std::map<std::string_view, svg::Point> stop_coords
             = StopCoords(db, route_map_settings, sortered_bus_names);
 
         svg::Document doc;
@@ -236,6 +234,5 @@ namespace svg {
         return svg::Text{ base_text }
         .SetFillColor(fill_color);
     }
-
 
 } // namespace svg

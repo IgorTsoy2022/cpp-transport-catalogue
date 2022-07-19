@@ -20,7 +20,8 @@ namespace cat {
 
     // public:
 
-    void TransportCatalogue::AddStop(const std::string_view stop_name,
+    void TransportCatalogue::AddStop(
+        const std::string_view stop_name,
         double latitude, double longitude) {
         dom::Stop stop;
         stop.name = std::string(stop_name);
@@ -55,7 +56,8 @@ namespace cat {
         }
     }
 
-    void TransportCatalogue::AddBus(const std::string_view bus_name,
+    void TransportCatalogue::AddBus(
+        const std::string_view bus_name,
         bool is_annular,
         const std::vector<std::string>& stop_names) {
 
@@ -189,9 +191,11 @@ namespace cat {
 
             std::unordered_set<dom::Stop*> tmp_stops =
             { stops.begin(), stops.end() };
-            bus_info.unique_stops = static_cast<int>(tmp_stops.size());
+            bus_info.unique_stops =
+                static_cast<int>(tmp_stops.size());
             bus_info.length = RouteLength(bus_name);
-            bus_info.curvature = bus_info.length / RouteGeoLength(bus_name);
+            bus_info.curvature =
+                bus_info.length / RouteGeoLength(bus_name);
         }
 
         return bus_info;
@@ -206,7 +210,8 @@ namespace cat {
         if (stop_info.exists) {
             dom::Stop* stop = stops_map_.at(stop_name);
             if (stop_buses_map_.count(stop) > 0) {
-                const auto& buses_at_stop = stop_buses_map_.at(stop);
+                const auto& buses_at_stop =
+                    stop_buses_map_.at(stop);
                 stop_info.buses = { buses_at_stop.begin(),
                                     buses_at_stop.end() };
             }

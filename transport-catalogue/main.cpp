@@ -1,13 +1,46 @@
-#include "input_reader.h"
-#include "json_reader.h"
 #include "request_handler.h"
 
 #include <fstream>
+#include <iostream>
+
+using namespace std::string_literals;
 
 int main() {
+    /*
+        json::Print(
+            json::Document{
+                json::Builder{}
+                .StartDict()
+                    .Key("key1"s).Value(123)
+                    .Key("key2"s).Value("value2"s)
+                    .Key("key3"s).StartArray()
+                        .Value(456)
+                        .StartDict().EndDict()
+                        .StartDict()
+                            .Key(""s)
+                            .Value(nullptr)
+                        .EndDict()
+                        .Value(""s)
+                    .EndArray()
+                .EndDict()
+                .Build()
+            },
+            std::cout
+        );
+        std::cout << std::endl;
 
-    using namespace std::literals;
+        json::Print(
+            json::Document{
+                json::Builder{}
+                .Value("just a string"s)
+                .Build()
+            },
+            std::cout
+        );
+        std::cout << std::endl;
+    */
 
+    /*
     cat::TransportCatalogue db;
     json::TransportCatalogueData tcd;
     svg::MapRenderer mr;
@@ -17,17 +50,9 @@ int main() {
     tcd.LoadRequests(db, std::cin);
 
     request_handler.JSONout(std::cout);
+    */
 
-/*
-    std::ifstream txtfile("C:\\CPP\\Yandex.Cpp\\Sprint_10\\test1.txt"s);
-    if (txtfile.is_open()) {
-        cat::TransportCatalogue db;
-        const auto& requests = txt::QueriesToDataBase(db, txtfile);
-        cat::TXTout(db, requests, 6, std::cout);
-        txtfile.close();
-    }
-
-    std::ifstream jsonfile1("C:\\CPP\\Yandex.Cpp\\Sprint_10\\testJSONin15-3.txt"s);
+    std::ifstream jsonfile1("C:\\CPP\\Yandex.Cpp\\Sprint_11\\testJSONin15-3.txt"s);
     if (jsonfile1.is_open()) {
         cat::TransportCatalogue db;
         json::TransportCatalogueData tcd;
@@ -41,17 +66,18 @@ int main() {
         setlocale(LC_ALL, "Russian");
 
         std::cout << "TXT out:\n"s;
-        cat::TXTout(db, tcd.GetRequests(), 6, std::cout);
+        request_handler.TXTout(std::cout);
 
         std::cout << "JSON out:\n"s;
         request_handler.JSONout(std::cout);
 
-        std::ofstream outfile1("C:\\CPP\\Yandex.Cpp\\Sprint_10\\testJSONout15-3.svg"s);
+        std::ofstream outfile1("C:\\CPP\\Yandex.Cpp\\Sprint_11\\testJSONout15-3.svg"s);
         if (outfile1.is_open()) {
             request_handler.RenderMap(outfile1);
             outfile1.close();
         }
     }
-*/
+
+
     return 0;
 }

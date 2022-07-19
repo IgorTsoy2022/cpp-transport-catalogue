@@ -20,16 +20,16 @@ namespace svg {
 
         int bus_label_font_size = 0;
         svg::Point bus_label_offset{ 0.0, 0.0 };
- 
+
         int stop_label_font_size = 0;
         svg::Point stop_label_offset{ 0.0, 0.0 };
 
         svg::Color underlayer_color;
 
         double underlayer_width = 0.0;
-        
+
         std::vector<svg::Color> color_palette;
-	};
+    };
 
     inline const double EPSILON = 1e-6;
     bool IsZero(double value);
@@ -142,9 +142,9 @@ namespace svg {
 
     private:
         std::map<std::string_view, svg::Point>
-        StopCoords(const cat::TransportCatalogue& db,
-            const svg::RouteMapSettings& route_map_settings,
-            std::set<std::string_view>& sortered_bus_names);
+            StopCoords(const cat::TransportCatalogue& db,
+                const svg::RouteMapSettings& route_map_settings,
+                std::set<std::string_view>& sortered_bus_names);
 
         svg::Polyline CreateRoute(const dom::Bus* bus,
             const std::map<std::string_view, svg::Point>& stop_coords,
@@ -172,4 +172,5 @@ namespace svg {
             const svg::Color& fill_color);
 
     };
+
 } // namespace svg

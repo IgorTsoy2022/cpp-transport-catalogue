@@ -15,11 +15,11 @@ namespace json {
         Distances distances;
         Routes routes;
         Document doc = Load(in);
-        for (const auto& [key, value] : doc.GetRoot().AsMap()) {
+        for (const auto& [key, value] : doc.GetRoot().AsDict()) {
             if (key == "base_requests"sv) {
                 for (const auto& base_request :
                     value.AsArray()) {
-                    const Dict& request = base_request.AsMap();
+                    const Dict& request = base_request.AsDict();
                     if (request.count("type"s) == 0) {
                         throw std::runtime_error(
                             "Type of data not found"s);
@@ -42,7 +42,7 @@ namespace json {
                 continue;
             }
             if (key == "render_settings"sv) {
-                LoadRouteMapSettings(value.AsMap());
+                LoadRouteMapSettings(value.AsDict());
                 continue;
             }
             if (key == "stat_requests"sv) {
@@ -67,7 +67,7 @@ namespace json {
         return stat_requests_;
     }
 
-    const svg::RouteMapSettings& 
+    const svg::RouteMapSettings&
         TransportCatalogueData::GetRouteMapSettings() const {
         return route_map_settings_;
     }
@@ -87,7 +87,7 @@ namespace json {
 
         if (request.count("road_distances"s) > 0) {
             for (const auto& [to_stop, distance] :
-                request.at("road_distances"s).AsMap()) {
+                request.at("road_distances"s).AsDict()) {
                 distances[stop.name].push_back(
                     { to_stop, distance.AsInt() });
             }
@@ -122,7 +122,7 @@ namespace json {
     void TransportCatalogueData::LoadRequests(
         const Array& stat_requests) {
         for (const auto& stat_request : stat_requests) {
-            const Dict& request = stat_request.AsMap();
+            const Dict& request = stat_request.AsDict();
             if (request.count("type"s) == 0) {
                 throw std::runtime_error(
                     "Type of request not found"s);

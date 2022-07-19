@@ -93,6 +93,9 @@ namespace txt {
         if (value == "Bus"sv) {
             return dom::QueryType::BUS;
         }
+        if (value == "Map"sv) {
+            return dom::QueryType::MAP;
+        }
         return dom::QueryType::UNKNOWN;
     }
 

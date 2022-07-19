@@ -24,11 +24,13 @@ void RequestHandler::JSONout(std::ostream& out) {
             if (stop_info.exists) {
                 json::Array items;
                 if (stop_info.buses.size() > 0) {
+
                     for (auto bus : stop_info.buses) {
                         items.push_back(
                             std::move(json::Node(
                                 bus->name)));
                     }
+
                 }
                 blocks["buses"s] =
                     std::move(json::Node(std::move(
@@ -69,7 +71,11 @@ void RequestHandler::JSONout(std::ostream& out) {
             blocks))));
     }
 
-    json::Document doc{ std::move(json::Node(root)) };
+//    json::Document doc{ std::move(json::Node(root)) };
+    json::Document doc{ json::Builder{}
+                              .Value(std::move(json::Node(root)))
+                              .Build() };
+
     json::Print(doc, out);
 }
 
@@ -77,91 +83,60 @@ void RequestHandler::RenderMap(std::ostream& out) {
     map_renderer_.RenderMap(db_, loaded_.GetRouteMapSettings()).Render(out);
 }
 
-namespace cat {
 
-    void TXTout(const cat::TransportCatalogue& db,
-        const std::vector<dom::Query>& requests,
-        int precision, std::ostream& out) {
-        for (const auto& request : requests) {
-            if (request.type == dom::QueryType::BUS) {
-                auto bus_info = db.GetBusInfo(request.name);
-                BusInfo(bus_info, precision, out);
-                continue;
-            }
-            if (request.type == dom::QueryType::STOP) {
-                auto stop_info = db.GetStopInfo(request.name);
-                StopInfo(stop_info, out);
-                continue;
-            }
-            out << "Unknown request."sv << std::endl;
+void RequestHandler::TXTout(std::ostream& out, int precision) {
+
+    for (const auto& request : loaded_.GetRequests()) {
+        if (request.type == dom::QueryType::BUS) {
+            auto bus_info = db_.GetBusInfo(request.name);
+            BusInfo(bus_info, precision, out);
+            continue;
         }
+        if (request.type == dom::QueryType::STOP) {
+            auto stop_info = db_.GetStopInfo(request.name);
+            StopInfo(stop_info, out);
+            continue;
+        }
+        if (request.type == dom::QueryType::MAP) {
+            RenderMap(out);
+            continue;
+        }
+        out << "Unknown request."sv << std::endl;
     }
+}
 
-    void BusInfo(const dom::BusInfo& bus_info, int precision,
-        std::ostream& out) {
-        out << std::setprecision(precision)
-            << "Bus "sv << bus_info.name << ": "sv;
-        if (bus_info.route_stops > 0) {
-            out << bus_info.route_stops << " stops on route, "sv
-                << bus_info.unique_stops << " unique stops, "sv
-                << bus_info.length << " route length, "sv
-                << bus_info.curvature << " curvature"sv;
+void RequestHandler::BusInfo(const dom::BusInfo& bus_info,
+    int precision, std::ostream& out) {
+    out << std::setprecision(precision)
+        << "Bus "sv << bus_info.name << ": "sv;
+    if (bus_info.route_stops > 0) {
+        out << bus_info.route_stops << " stops on route, "sv
+            << bus_info.unique_stops << " unique stops, "sv
+            << bus_info.length << " route length, "sv
+            << bus_info.curvature << " curvature"sv;
+    }
+    else {
+        out << "not found"sv;
+    }
+    out << std::endl;
+}
+
+void RequestHandler::StopInfo(const dom::StopInfo& stop_info,
+    std::ostream& out) {
+    out << "Stop "sv << stop_info.name << ": "sv;
+    if (stop_info.exists) {
+        if (stop_info.buses.size() > 0) {
+            out << "buses"sv;
+            for (const auto& bus : stop_info.buses) {
+                out << " "sv << bus->name;
+            }
         }
         else {
-            out << "not found"sv;
-        }
-        out << std::endl;
-    }
-
-    void StopInfo(const dom::StopInfo& stop_info, std::ostream& out) {
-        out << "Stop "sv << stop_info.name << ": "sv;
-        if (stop_info.exists) {
-            if (stop_info.buses.size() > 0) {
-                out << "buses"sv;
-                for (const auto& bus : stop_info.buses) {
-                    out << " "sv << bus->name;
-                }
-            }
-            else {
-               out << "no buses"sv;
-            }
-        }
-        else {
-            out << "not found"sv;
-        }
-        out << std::endl;
-    }
-
-    void Stops(const TransportCatalogue& db, int precision,
-        std::ostream& out) {
-        for (auto& [key, coords] : db.GetStops()) {
-            out << std::setprecision(precision)
-                << "Stop ["sv << key
-                << "]: "sv << coords->latitude
-                << ", "sv << coords->longitude << std::endl;
+            out << "no buses"sv;
         }
     }
-
-    void Buses(const TransportCatalogue& db,
-        std::ostream& out) {
-        for (auto& [key, bus] : db.GetBuses()) {
-            out << "Bus ["sv << key << "]: "sv;
-            auto count = bus->stops.size();
-            for (auto& stop : bus->stops) {
-                out << "["sv << stop->name << "]"sv
-                    << ((--count > 0) ? " > "sv : ""sv);
-            }
-            out << std::endl;
-        }
+    else {
+        out << "not found"sv;
     }
-
-    void Distances(const TransportCatalogue& db,
-        std::ostream& out) {
-        for (auto& [key, distance] : db.GetDistances()) {
-            out << "Distance between ["sv << key.first->name
-                << "] - ["sv << key.second->name << "] = "sv
-                << distance << std::endl;
-        }
-    }
-
-} // namespace cat
+    out << std::endl;
+}
