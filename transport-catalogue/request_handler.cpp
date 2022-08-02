@@ -1,8 +1,7 @@
 #include "request_handler.h"
 
 RequestHandler::RequestHandler(const cat::TransportCatalogue& db,
-    const json::TransportCatalogueData& loaded,
-    svg::MapRenderer& map_renderer)
+    json::Reader& loaded, svg::MapRenderer& map_renderer)
     : db_(db)
     , loaded_(loaded)
     , map_renderer_(map_renderer)
@@ -14,7 +13,7 @@ void RequestHandler::JSONout(std::ostream& out) {
 
     json::Array root;
 
-    for (const auto& request : loaded_.GetRequests()) {
+    for (const auto& request : loaded_.GetStatRequests()) {
         json::Dict blocks;
         blocks["request_id"s] =
             std::move(json::Node(request.id));
@@ -66,12 +65,66 @@ void RequestHandler::JSONout(std::ostream& out) {
             RenderMap(map_stream);
             blocks["map"s] = std::move(json::Node(map_stream.str()));
         }
+        else if (request.type == dom::QueryType::ROUTE) {
+            const auto& routing_settings = 
+                loaded_.GetRoutingSettings();
+            if (loaded_.ReloadRoutingSettings()) {
+                transport_router_.BuildGraph(db_, 
+                    routing_settings);
+                loaded_.ReloadRoutingSettings(false);
+            }
+            std::vector<dom::TripAction> actions;
+            actions = transport_router_.GetRoute(request.from_stop,
+                          request.to_stop, routing_settings.bus_wait_time);
+
+            if (actions.size() > 0) {
+
+                json::Array items;
+                double total_time = 0.0;
+                for (const auto& action : actions) {
+                    json::Dict items_dict;
+                    if (action.type == dom::ActionType::WAIT) {
+                        items_dict["type"s] =
+                            std::move(json::Node("Wait"s));
+                        items_dict["stop_name"s] =
+                            std::move(json::Node(action.name));
+                        items_dict["time"s] =
+                            std::move(json::Node(action.time));
+                        items.push_back(json::Node(items_dict));
+                        total_time += action.time;
+                        continue;
+                    }
+                    if (action.type == dom::ActionType::IN_BUS) {
+                        items_dict["type"s] =
+                            std::move(json::Node("Bus"s));
+                        items_dict["bus"s] =
+                            std::move(json::Node(action.name));
+                        items_dict["span_count"s] =
+                            std::move(json::Node(action.span_count));
+                        items_dict["time"s] =
+                            std::move(json::Node(action.time));
+                        items.push_back(json::Node(items_dict));
+                        total_time += action.time;
+                        continue;
+                    }
+                }
+                blocks["items"s] =
+                    std::move(json::Node(std::move(items)));
+                blocks["total_time"s] =
+                    std::move(json::Node(total_time));
+
+            }
+            else {
+                blocks["error_message"s] =
+                    std::move(json::Node("not found"s));
+            }
+
+        }
 
         root.push_back(std::move(json::Node(std::move(
             blocks))));
     }
 
-//    json::Document doc{ std::move(json::Node(root)) };
     json::Document doc{ json::Builder{}
                               .Value(std::move(json::Node(root)))
                               .Build() };
@@ -86,7 +139,7 @@ void RequestHandler::RenderMap(std::ostream& out) {
 
 void RequestHandler::TXTout(std::ostream& out, int precision) {
 
-    for (const auto& request : loaded_.GetRequests()) {
+    for (const auto& request : loaded_.GetStatRequests()) {
         if (request.type == dom::QueryType::BUS) {
             auto bus_info = db_.GetBusInfo(request.name);
             BusInfo(bus_info, precision, out);
@@ -99,6 +152,15 @@ void RequestHandler::TXTout(std::ostream& out, int precision) {
         }
         if (request.type == dom::QueryType::MAP) {
             RenderMap(out);
+            continue;
+        }
+        if (request.type == dom::QueryType::ROUTE) {
+            if (loaded_.ReloadRoutingSettings()) {
+                transport_router_.BuildGraph(db_,
+                    loaded_.GetRoutingSettings());
+                loaded_.ReloadRoutingSettings(false);
+            }
+            out << "ROUTE\n"sv;
             continue;
         }
         out << "Unknown request."sv << std::endl;

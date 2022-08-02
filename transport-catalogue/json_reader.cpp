@@ -1,19 +1,15 @@
 #include "json_reader.h"
 
-/*
- * Здесь можно разместить код наполнения транспортного
- * справочника данными из JSON, а также код обработки запросов
- * к базе и формирование массива ответов в формате JSON
- */
-
 namespace json {
 
     using namespace std::literals;
 
-    void TransportCatalogueData::LoadRequests(
-        cat::TransportCatalogue& db, std::istream& in) {
+    // Reader: public
+
+    void Reader::LoadRequests(cat::TransportCatalogue& db,
+                              std::istream& in) {
         Distances distances;
-        Routes routes;
+        Buses buses;
         Document doc = Load(in);
         for (const auto& [key, value] : doc.GetRoot().AsDict()) {
             if (key == "base_requests"sv) {
@@ -36,9 +32,15 @@ namespace json {
                     if (request_type == "Bus"sv) {
                         // "Bus" must be added after all
                         // "Stop" additions.
-                        LoadRoutes(request, routes);
+                        LoadBuses(request, buses);
                     }
                 }
+                reload_routing_settings_ = true;
+                continue;
+            }
+            if (key == "routing_settings"sv) {
+                LoadRoutingSettings(value.AsDict());
+                reload_routing_settings_ = true;
                 continue;
             }
             if (key == "render_settings"sv) {
@@ -46,9 +48,13 @@ namespace json {
                 continue;
             }
             if (key == "stat_requests"sv) {
-                LoadRequests(value.AsArray());
+                LoadStatRequests(value.AsArray());
                 continue;
             }
+        }
+
+        if (!reload_routing_settings_) {
+            return;
         }
 
         // Add Distances to database
@@ -57,23 +63,39 @@ namespace json {
         }
 
         // Add "Bus" to database
-        for (auto& [key, stops] : routes) {
+        for (auto& [key, stops] : buses) {
             db.AddBus(key, stops.first, std::move(stops.second));
         }
     }
 
-    const std::vector<dom::Query>&
-        TransportCatalogueData::GetRequests() const {
-        return stat_requests_;
+    bool Reader::ReloadRoutingSettings() const {
+        return reload_routing_settings_;
+    }
+
+    void Reader::ReloadRoutingSettings(bool reload) {
+        reload_routing_settings_ = reload;
+    }
+
+    const cat::RoutingSettings& 
+        Reader::GetRoutingSettings() const {
+        return routing_settings_;
     }
 
     const svg::RouteMapSettings&
-        TransportCatalogueData::GetRouteMapSettings() const {
+        Reader::GetRouteMapSettings() const {
         return route_map_settings_;
     }
 
-    void TransportCatalogueData::LoadStops(const Dict& request,
-        Distances& distances, cat::TransportCatalogue& db) {
+    const std::vector<dom::Query>&
+        Reader::GetStatRequests() const {
+        return stat_requests_;
+    }
+
+    // Reader: private
+
+    void Reader::LoadStops(const Dict& request,
+                           Distances& distances,
+                           cat::TransportCatalogue& db) {
         if (request.count("name"s) == 0) {
             throw std::runtime_error("Name of stop not found"s);
         }
@@ -96,8 +118,7 @@ namespace json {
         db.AddStop(std::move(stop));
     }
 
-    void TransportCatalogueData::LoadRoutes(
-        const Dict& request, Routes& routes) {
+    void Reader::LoadBuses(const Dict& request, Buses& buses) {
         if (request.count("name"s) == 0) {
             throw std::runtime_error("Name of bus not found"s);
         }
@@ -108,19 +129,132 @@ namespace json {
             is_roundtrip = request.at("is_roundtrip"s).AsBool();
         }
 
-        routes[name].first = is_roundtrip;
+        buses[name].first = is_roundtrip;
 
         if (request.count("stops"s) > 0) {
             for (const auto& stop :
                 request.at("stops"s).AsArray()) {
-                routes.at(name).second.push_back(
+                buses.at(name).second.push_back(
                     stop.AsString());
             }
         }
     }
 
-    void TransportCatalogueData::LoadRequests(
-        const Array& stat_requests) {
+    void Reader::LoadRoutingSettings(const Dict& requests) {
+        for (const auto& [key, node] : requests) {
+            if (key == "bus_wait_time"sv) {
+                routing_settings_.bus_wait_time = node.AsInt();
+                continue;
+            }
+            if (key == "bus_velocity"sv) {
+                routing_settings_.bus_velocity = node.AsDouble();
+                continue;
+            }
+        }
+    }
+
+    void Reader::LoadRouteMapSettings(const Dict& requests) {
+        for (const auto& [key, node] : requests) {
+            if (key == "width"sv) {
+                route_map_settings_.width = node.AsDouble();
+                continue;
+            }
+            if (key == "height"sv) {
+                route_map_settings_.height = node.AsDouble();
+                continue;
+            }
+            if (key == "padding"sv) {
+                route_map_settings_.padding = node.AsDouble();
+                continue;
+            }
+            if (key == "line_width"sv) {
+                route_map_settings_.line_width = node.AsDouble();
+                continue;
+            }
+            if (key == "stop_radius"sv) {
+                route_map_settings_.stop_radius =
+                    node.AsDouble();
+                continue;
+            }
+            if (key == "bus_label_font_size"sv) {
+                route_map_settings_.bus_label_font_size =
+                    node.AsInt();
+                continue;
+            }
+            if (key == "bus_label_offset"sv) {
+                route_map_settings_.bus_label_offset =
+                    std::move(GetLabelOffset(node));
+                continue;
+            }
+            if (key == "stop_label_font_size"sv) {
+                route_map_settings_.stop_label_font_size
+                    = node.AsInt();
+                continue;
+            }
+            if (key == "stop_label_offset"sv) {
+                route_map_settings_.stop_label_offset =
+                    std::move(GetLabelOffset(node));
+                continue;
+            }
+            if (key == "underlayer_color"sv) {
+                route_map_settings_.underlayer_color =
+                    std::move(GetColor(node));
+                continue;
+            }
+            if (key == "underlayer_width"sv) {
+                route_map_settings_.underlayer_width =
+                    node.AsDouble();
+                continue;
+            }
+            if (key == "color_palette"sv) {
+                if (node.IsArray()) {
+                    for (const auto& item : node.AsArray()) {
+                        route_map_settings_.color_palette.
+                            push_back(GetColor(item));
+                    }
+                }
+                continue;
+            }
+        }
+    }
+
+    svg::Point Reader::GetLabelOffset(const Node& node) {
+        svg::Point point;
+        if (node.IsArray()) {
+            const Array arr = node.AsArray();
+            if (arr.size() > 1) {
+                point.x = arr[0].AsDouble();
+                point.y = arr[1].AsDouble();
+            }
+        }
+        return point;
+    }
+
+    svg::Color Reader::GetColor(const Node& node) {
+        if (node.IsString()) {
+            return node.AsString();
+        }
+
+        if (node.IsArray()) {
+            const Array arr = node.AsArray();
+            if (arr.size() == 3) {
+                svg::Rgb color(arr[0].AsInt(),
+                               arr[1].AsInt(),
+                               arr[2].AsInt());
+                return color;
+            }
+            if (arr.size() == 4) {
+                svg::Rgba color(arr[0].AsInt(),
+                                arr[1].AsInt(),
+                                arr[2].AsInt(),
+                                arr[3].AsDouble());
+                return color;
+            }
+        }
+        return svg::Color{};
+    }
+
+    void Reader::LoadStatRequests(const Array& stat_requests) {
         for (const auto& stat_request : stat_requests) {
             const Dict& request = stat_request.AsDict();
             if (request.count("type"s) == 0) {
@@ -132,15 +266,29 @@ namespace json {
 
             const std::string_view
                 request_type = request.at("type"s).AsString();
+
             if (request_type == "Stop"sv) {
                 query.type = dom::QueryType::STOP;
             }
             else if (request_type == "Bus"sv) {
                 query.type = dom::QueryType::BUS;
             }
-            else if (request_type == "Map"sv)
-            {
+            else if (request_type == "Map"sv) {
                 query.type = dom::QueryType::MAP;
+            }
+            else if (request_type == "Route"sv) {
+                query.type = dom::QueryType::ROUTE;
+
+                if (request.count("from"s) > 0) {
+                    query.from_stop =
+                        request.at("from"s).AsString();
+                }
+                
+                if (request.count("to"s) > 0) {
+                    query.to_stop = 
+                        request.at("to"s).AsString();
+                }
+
             }
 
             if (request.count("id"s) > 0) {
@@ -152,129 +300,6 @@ namespace json {
             }
 
             stat_requests_.push_back(std::move(query));
-        }
-    }
-
-    void TransportCatalogueData::LoadRouteMapSettings(
-        const Dict& requests) {
-        for (const auto& [key, value] : requests) {
-            if (key == "width"sv) {
-                route_map_settings_.width = value.AsDouble();
-                continue;
-            }
-            if (key == "height"sv) {
-                route_map_settings_.height = value.AsDouble();
-                continue;
-            }
-            if (key == "padding"sv) {
-                route_map_settings_.padding = value.AsDouble();
-                continue;
-            }
-            if (key == "line_width"sv) {
-                route_map_settings_.line_width =
-                    value.AsDouble();
-                continue;
-            }
-            if (key == "stop_radius"sv) {
-                route_map_settings_.stop_radius =
-                    value.AsDouble();
-                continue;
-            }
-            if (key == "bus_label_font_size"sv) {
-                route_map_settings_.bus_label_font_size =
-                    value.AsInt();
-                continue;
-            }
-            if (key == "bus_label_offset"sv) {
-                if (value.IsArray()) {
-                    const auto& arr = value.AsArray();
-                    if (arr.size() > 1) {
-                        route_map_settings_.bus_label_offset.x =
-                            arr[0].AsDouble();
-                        route_map_settings_.bus_label_offset.y =
-                            arr[1].AsDouble();
-                    }
-                }
-                continue;
-            }
-            if (key == "stop_label_font_size"sv) {
-                route_map_settings_.stop_label_font_size
-                    = value.AsInt();
-                continue;
-            }
-            if (key == "stop_label_offset"sv) {
-                if (value.IsArray()) {
-                    const auto& arr = value.AsArray();
-                    if (arr.size() > 1) {
-                        route_map_settings_.stop_label_offset.x =
-                            arr[0].AsDouble();
-                        route_map_settings_.stop_label_offset.y =
-                            arr[1].AsDouble();
-                    }
-                }
-                continue;
-            }
-            if (key == "underlayer_color"sv) {
-                if (value.IsString()) {
-                    route_map_settings_.underlayer_color
-                        = value.AsString();
-                    continue;
-                }
-                if (value.IsArray()) {
-                    const auto& arr = value.AsArray();
-                    if (arr.size() == 3) {
-                        svg::Rgb color(arr[0].AsInt(),
-                            arr[1].AsInt(), arr[2].AsInt());
-                        route_map_settings_.underlayer_color
-                            = std::move(color);
-                    }
-                    else if (arr.size() == 4) {
-                        svg::Rgba color(arr[0].AsInt(),
-                            arr[1].AsInt(), arr[2].AsInt(),
-                            arr[3].AsDouble());
-                        route_map_settings_.underlayer_color
-                            = std::move(color);
-                    }
-                    continue;
-                }
-                continue;
-            }
-            if (key == "underlayer_width"sv) {
-                route_map_settings_.underlayer_width =
-                    value.AsDouble();
-                continue;
-            }
-            if (key == "color_palette"sv) {
-                if (value.IsArray()) {
-                    for (const auto& item : value.AsArray()) {
-                        if (item.IsString()) {
-                            route_map_settings_.color_palette.
-                                push_back(item.AsString());
-                            continue;
-                        }
-                        if (item.IsArray()) {
-                            const auto& arr = item.AsArray();
-                            if (arr.size() == 3) {
-                                svg::Rgb color(arr[0].AsInt(),
-                                    arr[1].AsInt(),
-                                    arr[2].AsInt());
-                                route_map_settings_.color_palette.
-                                    push_back(std::move(color));
-                            }
-                            else if (arr.size() == 4) {
-                                svg::Rgba color(arr[0].AsInt(),
-                                    arr[1].AsInt(),
-                                    arr[2].AsInt(),
-                                    arr[3].AsDouble());
-                                route_map_settings_.color_palette.
-                                    push_back(std::move(color));
-                            }
-                            continue;
-                        }
-                    }
-                }
-                continue;
-            }
         }
     }
 

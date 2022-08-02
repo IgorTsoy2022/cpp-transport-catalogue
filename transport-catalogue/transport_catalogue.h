@@ -21,8 +21,8 @@ namespace cat {
     using SetBus = std::set<dom::Bus*, Buscomp>;
 
     struct TwoStopsHasher {
-        size_t operator()(const std::pair<dom::Stop*,
-            dom::Stop*> stops) const;
+        size_t operator()(
+            const std::pair<dom::Stop*, dom::Stop*> stops) const;
     };
 
     class TransportCatalogue {

@@ -33,10 +33,22 @@ namespace dom {
         std::vector<Bus*> buses;
     };
 
+    enum class ActionType {
+        WAIT, IN_BUS, IDLE
+    };
+
+    struct TripAction {
+        ActionType type = ActionType::IDLE;
+        std::string name;
+        int span_count = 0;
+        double time = 0.0;
+    };
+
     enum class QueryType {
         STOP,
         BUS,
         MAP,
+        ROUTE,
         UNKNOWN
     };
 
@@ -44,6 +56,8 @@ namespace dom {
         QueryType type = QueryType::UNKNOWN;
         int id = 0;
         std::string name;
+        std::string from_stop;
+        std::string to_stop;
     };
 
 } // namespace dom

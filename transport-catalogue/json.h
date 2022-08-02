@@ -25,125 +25,53 @@ namespace json {
         using variant::variant;
         using Value = variant;
 
-        Node(Value value) {
-            *this = std::variant<std::nullptr_t, Array, Dict, bool,
-                int, double, std::string>(value);
-        }
+        Node(const Value& value);
 
-        bool IsNull() const {
-            return std::holds_alternative<std::nullptr_t>(*this);
-        }
+        bool IsNull() const;
 
-        bool IsBool() const {
-            return std::holds_alternative<bool>(*this);
-        }
-        bool AsBool() const {
-            using namespace std::literals;
-            if (!IsBool()) {
-                throw std::logic_error("Not a bool"s);
-            }
-            return std::get<bool>(*this);
-        }
+        bool IsBool() const;
+        bool AsBool() const;
 
-        bool IsInt() const {
-            return std::holds_alternative<int>(*this);
-        }
-        int AsInt() const {
-            using namespace std::literals;
-            if (!IsInt()) {
-                throw std::logic_error("Not an int"s);
-            }
-            return std::get<int>(*this);
-        }
+        bool IsInt() const;
+        int AsInt() const;
 
-        bool IsPureDouble() const {
-            return std::holds_alternative<double>(*this);
-        }
-        bool IsDouble() const {
-            return IsInt() || IsPureDouble();
-        }
-        double AsDouble() const {
-            using namespace std::literals;
-            if (!IsDouble()) {
-                throw std::logic_error("Not a double"s);
-            }
-            return IsPureDouble() ? std::get<double>(*this)
-                : AsInt();
-        }
+        bool IsPureDouble() const;
+        bool IsDouble() const;
+        double AsDouble() const;
 
-        bool IsString() const {
-            return std::holds_alternative<std::string>(*this);
-        }
-        const std::string& AsString() const {
-            using namespace std::literals;
-            if (!IsString()) {
-                throw std::logic_error("Not a string"s);
-            }
-            return std::get<std::string>(*this);
-        }
+        bool IsString() const;
+        const std::string& AsString() const;
 
-        bool IsArray() const {
-            return std::holds_alternative<Array>(*this);
-        }
-        const Array& AsArray() const {
-            using namespace std::literals;
-            if (!IsArray()) {
-                throw std::logic_error("Not an array"s);
-            }
-            return std::get<Array>(*this);
-        }
+        bool IsArray() const;
+        const Array& AsArray() const;
 
-        bool IsDict() const {
-            return std::holds_alternative<Dict>(*this);
-        }
-        const Dict& AsDict() const {
-            using namespace std::literals;
-            if (!IsDict()) {
-                throw std::logic_error("Not a dict"s);
-            }
-            return std::get<Dict>(*this);
-        }
+        bool IsDict() const;
+        const Dict& AsDict() const;
 
-        const Value& GetValue() const {
-            return *this;
-        }
+        const Value& GetValue() const;
 
-        Value& GetMutableValue() {
-            return *this;
-        }
+        Value& GetMutableValue();
 
-        bool operator==(const Node& rhs) const {
-            return GetValue() == rhs.GetValue();
-        }
+        bool operator==(const Node& rhs) const;
     };
 
-    inline bool operator!=(const Node& lhs, const Node& rhs) {
-        return !(lhs == rhs);
-    }
+    inline bool operator!=(const Node& lhs, const Node& rhs);
 
     class Document {
     public:
-        explicit Document(Node root)
-            : root_(std::move(root))
-        {}
+        explicit Document(Node root);
 
-        const Node& GetRoot() const {
-            return root_;
-        }
+        const Node& GetRoot() const;
 
     private:
         Node root_;
     };
 
     inline bool operator==(const Document& lhs,
-        const Document& rhs) {
-        return lhs.GetRoot() == rhs.GetRoot();
-    }
+        const Document& rhs);
 
     inline bool operator!=(const Document& lhs,
-        const Document& rhs) {
-        return !(lhs == rhs);
-    }
+        const Document& rhs);
 
     Document Load(std::istream& input);
 
