@@ -6,7 +6,7 @@ namespace svg {
         return std::abs(value) < EPSILON;
     }
 
-    svg::Point SphereProjector::operator()(geo::Coordinates coords) const {
+    dom::Point SphereProjector::operator()(geo::Coordinates coords) const {
         return {
             (coords.lng - min_lon_) * zoom_coeff_ + padding_,
             (max_lat_ - coords.lat) * zoom_coeff_ + padding_
@@ -24,22 +24,22 @@ namespace svg {
     using namespace std::literals;
 
     svg::Document MapRenderer::RenderMap(
-        const cat::TransportCatalogue& db,
-        const svg::RouteMapSettings& route_map_settings) {
+        const cat::TransportCatalogue& db) {
+
+        const auto& route_map_settings = db.GetRouteMapSettings();
 
         std::set<std::string_view> sortered_bus_names;
+        std::map<std::string_view, dom::Point>
+            stop_coords = StopCoords(db, sortered_bus_names);
 
-        std::map<std::string_view, svg::Point> stop_coords
-            = StopCoords(db, route_map_settings, sortered_bus_names);
-
-        svg::Document doc;
-        int colors_count
-            = static_cast<int>(route_map_settings.color_palette.size());
+        int colors_count =
+            static_cast<int>(route_map_settings.color_palette.size());
         int color_index = 0;
 
         std::vector<std::unique_ptr<svg::Drawable>> text_container;
         const auto& buses = db.GetBuses();
 
+        svg::Document doc;
         for (const auto& bus_name : sortered_bus_names) {
 
             const auto& bus = buses.at(bus_name);
@@ -126,21 +126,23 @@ namespace svg {
         return doc;
     }
 
-    std::map<std::string_view, svg::Point>
-        MapRenderer::StopCoords(const cat::TransportCatalogue& db,
-            const svg::RouteMapSettings& route_map_settings,
-            std::set<std::string_view>& sortered_bus_names) {
+    std::map<std::string_view, dom::Point>
+    MapRenderer::StopCoords(const cat::TransportCatalogue& db,
+                            std::set<std::string_view>& buses) {
 
-        std::map<std::string_view, svg::Point> coords;
+        std::map<std::string_view, dom::Point> coords;
+
+        const auto& route_map_settings = db.GetRouteMapSettings();
 
         std::vector<geo::Coordinates> geo_coords;
         std::unordered_set<dom::Stop*> stops;
+
         for (const auto& [bus_name, bus] : db.GetBuses()) {
             for (const auto& stop : bus->stops) {
-                sortered_bus_names.insert(bus_name);
+                buses.insert(bus_name);
                 stops.insert(stop);
                 geo_coords.push_back({ stop->latitude,
-                                            stop->longitude });
+                                       stop->longitude });
             }
         }
 
@@ -160,9 +162,9 @@ namespace svg {
     }
 
     svg::Polyline MapRenderer::CreateRoute(const dom::Bus* bus,
-        const std::map<std::string_view, svg::Point>& stop_coords,
-        const svg::Color& fill_color,
-        const svg::Color& stroke_color,
+        const std::map<std::string_view, dom::Point>& stop_coords,
+        const dom::Color& fill_color,
+        const dom::Color& stroke_color,
         const double stroke_width,
         const svg::StrokeLineCap stroke_line_cap,
         const svg::StrokeLineJoin stroke_line_join) {
@@ -190,8 +192,8 @@ namespace svg {
     }
 
     svg::Text MapRenderer::BaseText(const std::string_view name,
-        const svg::Point& coords,
-        const svg::Point& offset,
+        const dom::Point& coords,
+        const dom::Point& offset,
         const int font_size,
         const std::string& font_family,
         const std::string& font_weight) {
@@ -205,8 +207,8 @@ namespace svg {
     }
 
     svg::Text MapRenderer::BaseText(const std::string_view name,
-        const svg::Point& coords,
-        const svg::Point& offset,
+        const dom::Point& coords,
+        const dom::Point& offset,
         const int font_size,
         const std::string& font_family) {
         return svg::Text()
@@ -218,8 +220,8 @@ namespace svg {
     }
 
     svg::Text MapRenderer::Substrate(const svg::Text& base_text,
-        const svg::Color& fill_color,
-        const svg::Color& stroke_color,
+        const dom::Color& fill_color,
+        const dom::Color& stroke_color,
         const double stroke_width) {
         return svg::Text{ base_text }
             .SetFillColor(fill_color)
@@ -230,7 +232,7 @@ namespace svg {
     }
 
     svg::Text MapRenderer::Caption(const svg::Text& base_text,
-        const svg::Color& fill_color) {
+        const dom::Color& fill_color) {
         return svg::Text{ base_text }
         .SetFillColor(fill_color);
     }

@@ -20,7 +20,7 @@ namespace json {
         Builder& EndArray();
 
         DictContext StartDict();
-        DictKeyContext Key(const std::string);
+        DictKeyContext Key(/*const*/ std::string);
         Builder& EndDict();
 
         Builder& Value(Node);
@@ -104,4 +104,4 @@ namespace json {
         Builder& builder_;
     };
 
-}// namespace json
+} // namespace json

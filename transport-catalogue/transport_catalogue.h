@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <iostream>
+
 namespace cat {
 
     struct Buscomp final {
@@ -25,6 +27,12 @@ namespace cat {
             const std::pair<dom::Stop*, dom::Stop*> stops) const;
     };
 
+    struct StopsDistance {
+        std::string_view from_stop;
+        std::string_view to_stop;
+        int distance;
+    };
+
     class TransportCatalogue {
     public:
         TransportCatalogue() = default;
@@ -36,6 +44,8 @@ namespace cat {
         void AddStopDistances(const std::string_view stop_name,
             const std::vector<std::pair<std::string, int>>&
             distances);
+        void AddStopDistances(const std::vector<StopsDistance>&
+            stops_distances);
 
         void AddBus(const std::string_view bus_name, bool is_annular,
             const std::vector<std::string>& stop_names);
@@ -70,6 +80,19 @@ namespace cat {
             int, TwoStopsHasher>&
             GetDistances() const;
 
+        dom::RouteMapSettings& GetRouteMapSettings();
+        const dom::RouteMapSettings& GetRouteMapSettings() const;
+
+        const bool RouterIsSet() const;
+        const void SetRouterIsSet(bool value);
+
+        dom::RoutingSettings& GetRoutingSettings();
+        const dom::RoutingSettings& GetRoutingSettings() const;
+
+        dom::SerializationSettings& GetSerializationSettings();
+        const dom::SerializationSettings& 
+        GetSerializationSettings() const;
+
         void Clear();
 
     private:
@@ -83,6 +106,13 @@ namespace cat {
         std::unordered_map<dom::Stop*, SetBus> stop_buses_map_;
         std::unordered_map<std::pair<dom::Stop*, dom::Stop*>,
             int, TwoStopsHasher> distances_;
+
+        dom::RouteMapSettings route_map_settings_;
+
+        bool router_is_set_ = false;
+        dom::RoutingSettings routing_settings_;
+
+        dom::SerializationSettings serialization_settings_;
 
         void InsertBusesToStop(dom::Bus* bus);
     };

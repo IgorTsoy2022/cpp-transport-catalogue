@@ -1,5 +1,7 @@
 #pragma once
 
+#include "domain.h"
+
 #include <cstdint>
 #include <iostream>
 #include <memory>
@@ -12,15 +14,6 @@
 namespace svg {
 
     using namespace std::literals;
-
-    struct Point {
-        Point() = default;
-        Point(double x, double y)
-            : x(x), y(y) {
-        }
-        double x = 0;
-        double y = 0;
-    };
 
     // Вспомогательная структура, хранящая контекст для вывода
     // SVG-документа с отступами.
@@ -55,33 +48,6 @@ namespace svg {
 
     // ------------------------- Colour -------------------------
 
-    struct Rgb {
-        Rgb() = default;
-        Rgb(uint8_t r, uint8_t g, uint8_t b)
-            : red(r), green(g), blue(b)
-        {};
-
-        uint8_t red = 0;
-        uint8_t green = 0;
-        uint8_t blue = 0;
-    };
-
-    struct Rgba {
-        Rgba() = default;
-        Rgba(uint8_t r, uint8_t g, uint8_t b,
-            double o)
-            : red(r), green(g), blue(b), opacity(o)
-        {};
-
-        uint8_t red = 0;
-        uint8_t green = 0;
-        uint8_t blue = 0;
-        double opacity = 1.0;
-    };
-
-    using Color = std::variant<std::monostate, std::string,
-        svg::Rgb, svg::Rgba>;
-
     struct ColorOutputStream {
         std::ostream& out;
 
@@ -93,13 +59,13 @@ namespace svg {
             out << value;
         }
 
-        void operator()(const svg::Rgb& value) const {
+        void operator()(const dom::Rgb& value) const {
             out << "rgb("sv << +value.red << ","sv
                 << +value.green << ","sv
                 << +value.blue << ")"sv;
         }
 
-        void operator()(const svg::Rgba& value) const {
+        void operator()(const dom::Rgba& value) const {
             out << "rgba("sv << +value.red << ","sv
                 << +value.green << ","sv
                 << +value.blue << ","sv
@@ -108,14 +74,14 @@ namespace svg {
     };
 
     std::ostream& operator<<(std::ostream& out,
-        const svg::Color& value);
+        const dom::Color& value);
 
     // Объявив в заголовочном файле константу со спецификатором
     // inline, мы сделаем так, что она будет одной на все единицы
     // трансляции, которые подключают этот заголовок.
     // В противном случае каждая единица трансляции будет
     // использовать свою копию этой константы
-    inline const Color NoneColor = std::monostate{};
+    inline const dom::Color NoneColor = std::monostate{};
 
     inline const std::string_view LINECAP[3] =
     { "butt"sv, "round"sv, "square"sv };
@@ -138,12 +104,12 @@ namespace svg {
     template <typename Owner>
     class PathProps {
     public:
-        Owner& SetFillColor(Color color) {
+        Owner& SetFillColor(dom::Color color) {
             fill_color_ = std::move(color);
             return AsOwner();
         }
 
-        Owner& SetStrokeColor(Color color) {
+        Owner& SetStrokeColor(dom::Color color) {
             stroke_color_ = std::move(color);
             return AsOwner();
         }
@@ -199,8 +165,8 @@ namespace svg {
             return static_cast<Owner&>(*this);
         }
 
-        std::optional<Color> fill_color_;
-        std::optional<Color> stroke_color_;
+        std::optional<dom::Color> fill_color_;
+        std::optional<dom::Color> stroke_color_;
         std::optional<double> stroke_width_;
         std::optional<StrokeLineCap> stroke_linecap_;
         std::optional<StrokeLineJoin> stroke_linejoin_;
@@ -259,14 +225,14 @@ namespace svg {
     class Circle final : public Object,
         public PathProps<Circle> {
     public:
-        Circle& SetCenter(Point center);
+        Circle& SetCenter(dom::Point center);
         Circle& SetRadius(double radius);
 
     private:
         void RenderObject(
             const RenderContext& context) const override;
 
-        Point center_;
+        dom::Point center_;
         double radius_ = 1.0;
     };
 
@@ -279,13 +245,13 @@ namespace svg {
     class Polyline final : public Object,
         public PathProps<Polyline> {
     public:
-        Polyline& AddPoint(Point point);
+        Polyline& AddPoint(dom::Point point);
 
     private:
         void RenderObject(
             const RenderContext& context) const override;
 
-        std::vector<Point> points_;
+        std::vector<dom::Point> points_;
     };
 
     // -------------------------- Text --------------------------
@@ -299,11 +265,11 @@ namespace svg {
         Text() = default;
 
         // Задаёт координаты опорной точки (атрибуты x и y)
-        Text& SetPosition(Point pos);
+        Text& SetPosition(dom::Point pos);
 
         // Задаёт смещение относительно опорной точки
         // (атрибуты dx, dy)
-        Text& SetOffset(Point offset);
+        Text& SetOffset(dom::Point offset);
 
         // Задаёт размеры шрифта (атрибут font-size)
         Text& SetFontSize(uint32_t size);
@@ -322,8 +288,8 @@ namespace svg {
         void RenderObject(
             const RenderContext& context) const override;
 
-        Point pos_ = { 0.0, 0.0 };
-        Point offset_ = { 0.0, 0.0 };
+        dom::Point pos_ = { 0.0, 0.0 };
+        dom::Point offset_ = { 0.0, 0.0 };
         uint32_t size_ = 1;
         std::string font_family_ = ""s;
         std::string font_weight_ = ""s;
@@ -344,4 +310,4 @@ namespace svg {
         std::vector<std::unique_ptr<Object>> objects_;
     };
 
-}  // namespace svg
+} // namespace svg

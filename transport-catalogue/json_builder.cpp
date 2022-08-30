@@ -149,7 +149,7 @@ namespace json {
 
     //-----------------------DictContext-----------------------
 
-    DictKeyContext DictContext::Key(const std::string key) {
+    DictKeyContext DictContext::Key(/*const*/ std::string key) {
         return builder_.Key(std::move(key));
     }
 
@@ -204,4 +204,4 @@ namespace json {
         return builder_.EndDict();
     }
 
-}//namespace json
+} //namespace json

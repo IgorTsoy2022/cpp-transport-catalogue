@@ -2,6 +2,7 @@
 
 #include "json_builder.h"
 #include "json_reader.h"
+#include "transport_router.h"
 
 #include <iomanip>
 #include <iostream>
@@ -16,7 +17,7 @@
 class RequestHandler {
 public:
 
-    RequestHandler(const cat::TransportCatalogue& db,
+    RequestHandler(cat::TransportCatalogue& db,
         json::Reader& loaded,
         svg::MapRenderer& map_renderer);
 
@@ -25,7 +26,7 @@ public:
     void RenderMap(std::ostream& out);
 
 private:
-    const cat::TransportCatalogue& db_;
+    cat::TransportCatalogue& db_;
     json::Reader& loaded_;
     svg::MapRenderer& map_renderer_;
 

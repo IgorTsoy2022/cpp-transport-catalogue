@@ -9,28 +9,6 @@
 
 namespace svg {
 
-    struct RouteMapSettings {
-        double width = 0.0;
-        double height = 0.0;
-        double padding = 0.0;
-
-        double line_width = 0.0;
-
-        double stop_radius = 0.0;
-
-        int bus_label_font_size = 0;
-        svg::Point bus_label_offset{ 0.0, 0.0 };
-
-        int stop_label_font_size = 0;
-        svg::Point stop_label_offset{ 0.0, 0.0 };
-
-        svg::Color underlayer_color;
-
-        double underlayer_width = 0.0;
-
-        std::vector<svg::Color> color_palette;
-    };
-
     inline const double EPSILON = 1e-6;
     bool IsZero(double value);
 
@@ -100,7 +78,7 @@ namespace svg {
 
         // Проецирует широту и долготу в координаты внутри
         // SVG-изображения
-        svg::Point operator()(geo::Coordinates coords) const;
+        dom::Point operator()(geo::Coordinates coords) const;
 
     private:
         double padding_;
@@ -137,39 +115,37 @@ namespace svg {
     class MapRenderer {
     public:
 
-        svg::Document RenderMap(const cat::TransportCatalogue& db,
-            const svg::RouteMapSettings& route_map_settings);
+        svg::Document RenderMap(const cat::TransportCatalogue& db);
 
     private:
-        std::map<std::string_view, svg::Point>
-            StopCoords(const cat::TransportCatalogue& db,
-                const svg::RouteMapSettings& route_map_settings,
-                std::set<std::string_view>& sortered_bus_names);
+        std::map<std::string_view, dom::Point>
+        StopCoords(const cat::TransportCatalogue& db,
+                   std::set<std::string_view>& sortered_bus_names);
 
         svg::Polyline CreateRoute(const dom::Bus* bus,
-            const std::map<std::string_view, svg::Point>& stop_coords,
-            const svg::Color& fill_color,
-            const svg::Color& stroke_color,
+            const std::map<std::string_view, dom::Point>& stop_coords,
+            const dom::Color& fill_color,
+            const dom::Color& stroke_color,
             const double stroke_width,
             const svg::StrokeLineCap stroke_line_cap,
             const svg::StrokeLineJoin stroke_line_join);
         svg::Text BaseText(const std::string_view name,
-            const svg::Point& coords,
-            const svg::Point& offset,
+            const dom::Point& coords,
+            const dom::Point& offset,
             const int font_size,
             const std::string& font_family,
             const std::string& font_weight);
         svg::Text BaseText(const std::string_view name,
-            const svg::Point& coords,
-            const svg::Point& offset,
+            const dom::Point& coords,
+            const dom::Point& offset,
             const int font_size,
             const std::string& font_family);
         svg::Text Substrate(const svg::Text& base_text,
-            const svg::Color& fill_color,
-            const svg::Color& stroke_color,
+            const dom::Color& fill_color,
+            const dom::Color& stroke_color,
             const double stroke_width);
         svg::Text Caption(const svg::Text& base_text,
-            const svg::Color& fill_color);
+            const dom::Color& fill_color);
 
     };
 

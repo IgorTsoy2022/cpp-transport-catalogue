@@ -1,31 +1,21 @@
 #pragma once
 
-#include "domain.h"
 #include "router.h"
 #include "transport_catalogue.h"
 
 #include <memory>
-#include <string>
 #include <string_view>
-#include <vector>
-#include <unordered_map>
 
 namespace cat {
-
-    struct RoutingSettings {
-        int bus_wait_time = 6;
-        double bus_velocity = 40;
-	};
 
     class TransportRouter {
     public:
 
-        void BuildGraph(const TransportCatalogue& db,
-            const RoutingSettings& routing_settings);
+        void BuildGraph(const TransportCatalogue& db);
 
         std::vector<dom::TripAction>
-        GetRoute(std::string_view from_stop,
-                 std::string_view to_stop, double bus_wait_time);
+            GetRoute(std::string_view from_stop,
+                std::string_view to_stop, double bus_wait_time);
 
         void Clear();
 
@@ -40,8 +30,7 @@ namespace cat {
 
         std::unique_ptr<graph::Router<double>> router_;
 
-        void AddEdges(const dom::Bus* bus, const TransportCatalogue& db,
-            const RoutingSettings& routing_settings);
+        void AddEdges(const dom::Bus* bus, const TransportCatalogue& db);
     };
 
 } // namespace cat

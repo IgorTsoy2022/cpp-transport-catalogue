@@ -56,6 +56,21 @@ namespace cat {
         }
     }
 
+    void TransportCatalogue::AddStopDistances(
+        const std::vector<StopsDistance>& stops_distances) {
+
+        for (const auto& value : stops_distances) {
+            if (stops_map_.count(value.from_stop) == 0 ||
+                stops_map_.count(value.to_stop) == 0) {
+                throw std::invalid_argument(
+                    "Invalid Stop in Distances"s);
+            }
+            distances_[{ stops_map_.at(value.from_stop),
+                stops_map_.at(value.to_stop) }] =
+                value.distance;
+        }
+    }
+
     void TransportCatalogue::AddBus(
         const std::string_view bus_name,
         bool is_annular,
@@ -241,6 +256,44 @@ namespace cat {
         return distances_;
     }
 
+    dom::RouteMapSettings&
+        TransportCatalogue::GetRouteMapSettings() {
+        return route_map_settings_;
+    }
+
+    const dom::RouteMapSettings&
+        TransportCatalogue::GetRouteMapSettings() const {
+        return route_map_settings_;
+    }
+
+    const bool TransportCatalogue::RouterIsSet() const {
+        return router_is_set_;
+    }
+
+    const void TransportCatalogue::SetRouterIsSet(bool value) {
+        router_is_set_ = value;
+    }
+
+    dom::RoutingSettings&
+        TransportCatalogue::GetRoutingSettings()  {
+        return routing_settings_;
+    }
+
+    const dom::RoutingSettings&
+        TransportCatalogue::GetRoutingSettings() const {
+        return routing_settings_;
+    }
+
+    dom::SerializationSettings&
+        TransportCatalogue::GetSerializationSettings() {
+        return serialization_settings_;
+    }
+
+    const dom::SerializationSettings&
+        TransportCatalogue::GetSerializationSettings() const {
+        return serialization_settings_;
+    }
+
     void TransportCatalogue::Clear() {
         for (auto& [_, bus] : stop_buses_map_) {
             bus.clear();
@@ -257,6 +310,28 @@ namespace cat {
 
         stops_map_.clear();
         stops_.clear();
+
+    //    route_map_settings_ = {};
+        route_map_settings_.width = 0.0;
+        route_map_settings_.height = 0.0;
+        route_map_settings_.padding = 0.0;
+        route_map_settings_.line_width = 0.0;
+        route_map_settings_.stop_radius = 0.0;
+        route_map_settings_.bus_label_font_size = 0;
+        route_map_settings_.bus_label_offset = { 0.0, 0.0 };
+        route_map_settings_.stop_label_font_size = 0;
+        route_map_settings_.stop_label_offset = { 0.0, 0.0 };
+        route_map_settings_.underlayer_color = {};
+        route_map_settings_.underlayer_width = 0.0;
+
+        if (route_map_settings_.color_palette.size() > 0) {
+    //        route_map_settings_.color_palette.clear();
+        }
+
+        routing_settings_.bus_wait_time = 0;
+        routing_settings_.bus_velocity = 0.0;
+
+        serialization_settings_.filename = "";
     }
 
     // private:

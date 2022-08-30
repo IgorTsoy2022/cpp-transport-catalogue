@@ -5,7 +5,7 @@ namespace svg {
     // ------------------------- Colour -------------------------
 
     std::ostream& operator<<(std::ostream& out,
-        const svg::Color& value) {
+        const dom::Color& value) {
         std::ostringstream strm;
         std::visit(svg::ColorOutputStream{ strm }, value);
         out << strm.str();
@@ -37,7 +37,7 @@ namespace svg {
 
     // ------------------------- Circle -------------------------
 
-    Circle& Circle::SetCenter(Point center) {
+    Circle& Circle::SetCenter(dom::Point center) {
         center_ = center;
         return *this;
     }
@@ -60,7 +60,7 @@ namespace svg {
 
     // ------------------------ Polyline ------------------------
 
-    Polyline& Polyline::AddPoint(Point new_point) {
+    Polyline& Polyline::AddPoint(dom::Point new_point) {
         points_.push_back(new_point);
         return *this;
     }
@@ -86,12 +86,12 @@ namespace svg {
 
     // -------------------------- Text --------------------------
 
-    Text& Text::SetPosition(Point pos) {
+    Text& Text::SetPosition(dom::Point pos) {
         pos_ = pos;
         return *this;
     }
 
-    Text& Text::SetOffset(Point offset) {
+    Text& Text::SetOffset(dom::Point offset) {
         offset_ = offset;
         return *this;
     }

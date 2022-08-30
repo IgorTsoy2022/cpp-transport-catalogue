@@ -7,7 +7,7 @@ namespace json {
     // Reader: public
 
     void Reader::LoadRequests(cat::TransportCatalogue& db,
-                              std::istream& in) {
+        std::istream& in) {
         Distances distances;
         Buses buses;
         Document doc = Load(in);
@@ -35,26 +35,26 @@ namespace json {
                         LoadBuses(request, buses);
                     }
                 }
-                reload_routing_settings_ = true;
-                continue;
-            }
-            if (key == "routing_settings"sv) {
-                LoadRoutingSettings(value.AsDict());
-                reload_routing_settings_ = true;
+                db.SetRouterIsSet(false);
                 continue;
             }
             if (key == "render_settings"sv) {
-                LoadRouteMapSettings(value.AsDict());
+                LoadRouteMapSettings(db, value.AsDict());
+                continue;
+            }
+            if (key == "routing_settings"sv) {
+                LoadRoutingSettings(db, value.AsDict());
+                db.SetRouterIsSet(false);
+                continue;
+            }
+            if (key == "serialization_settings"sv) {
+                LoadSerializationSettings(db, value.AsDict());
                 continue;
             }
             if (key == "stat_requests"sv) {
                 LoadStatRequests(value.AsArray());
                 continue;
             }
-        }
-
-        if (!reload_routing_settings_) {
-            return;
         }
 
         // Add Distances to database
@@ -68,24 +68,6 @@ namespace json {
         }
     }
 
-    bool Reader::ReloadRoutingSettings() const {
-        return reload_routing_settings_;
-    }
-
-    void Reader::ReloadRoutingSettings(bool reload) {
-        reload_routing_settings_ = reload;
-    }
-
-    const cat::RoutingSettings& 
-        Reader::GetRoutingSettings() const {
-        return routing_settings_;
-    }
-
-    const svg::RouteMapSettings&
-        Reader::GetRouteMapSettings() const {
-        return route_map_settings_;
-    }
-
     const std::vector<dom::Query>&
         Reader::GetStatRequests() const {
         return stat_requests_;
@@ -94,8 +76,8 @@ namespace json {
     // Reader: private
 
     void Reader::LoadStops(const Dict& request,
-                           Distances& distances,
-                           cat::TransportCatalogue& db) {
+        Distances& distances,
+        cat::TransportCatalogue& db) {
         if (request.count("name"s) == 0) {
             throw std::runtime_error("Name of stop not found"s);
         }
@@ -140,77 +122,71 @@ namespace json {
         }
     }
 
-    void Reader::LoadRoutingSettings(const Dict& requests) {
-        for (const auto& [key, node] : requests) {
-            if (key == "bus_wait_time"sv) {
-                routing_settings_.bus_wait_time = node.AsInt();
-                continue;
-            }
-            if (key == "bus_velocity"sv) {
-                routing_settings_.bus_velocity = node.AsDouble();
-                continue;
-            }
-        }
-    }
+    void Reader::LoadRouteMapSettings(cat::TransportCatalogue& db, 
+                                      const Dict& requests) {
 
-    void Reader::LoadRouteMapSettings(const Dict& requests) {
+        auto& route_map_settings = db.GetRouteMapSettings();
+
         for (const auto& [key, node] : requests) {
             if (key == "width"sv) {
-                route_map_settings_.width = node.AsDouble();
+                route_map_settings.width = node.AsDouble();
                 continue;
             }
             if (key == "height"sv) {
-                route_map_settings_.height = node.AsDouble();
+                route_map_settings.height = node.AsDouble();
                 continue;
             }
             if (key == "padding"sv) {
-                route_map_settings_.padding = node.AsDouble();
+                route_map_settings.padding = node.AsDouble();
                 continue;
             }
             if (key == "line_width"sv) {
-                route_map_settings_.line_width = node.AsDouble();
+                route_map_settings.line_width = node.AsDouble();
                 continue;
             }
             if (key == "stop_radius"sv) {
-                route_map_settings_.stop_radius =
+                route_map_settings.stop_radius =
                     node.AsDouble();
                 continue;
             }
             if (key == "bus_label_font_size"sv) {
-                route_map_settings_.bus_label_font_size =
+                route_map_settings.bus_label_font_size =
                     node.AsInt();
                 continue;
             }
             if (key == "bus_label_offset"sv) {
-                route_map_settings_.bus_label_offset =
+                route_map_settings.bus_label_offset =
                     std::move(GetLabelOffset(node));
                 continue;
             }
             if (key == "stop_label_font_size"sv) {
-                route_map_settings_.stop_label_font_size
+                route_map_settings.stop_label_font_size
                     = node.AsInt();
                 continue;
             }
             if (key == "stop_label_offset"sv) {
-                route_map_settings_.stop_label_offset =
+                route_map_settings.stop_label_offset =
                     std::move(GetLabelOffset(node));
                 continue;
             }
             if (key == "underlayer_color"sv) {
-                route_map_settings_.underlayer_color =
+                route_map_settings.underlayer_color =
                     std::move(GetColor(node));
                 continue;
             }
             if (key == "underlayer_width"sv) {
-                route_map_settings_.underlayer_width =
+                route_map_settings.underlayer_width =
                     node.AsDouble();
                 continue;
             }
             if (key == "color_palette"sv) {
                 if (node.IsArray()) {
+                    auto size = node.AsArray().size();
+                    route_map_settings.color_palette.resize(size);
+                    size_t i = 0;
                     for (const auto& item : node.AsArray()) {
-                        route_map_settings_.color_palette.
-                            push_back(GetColor(item));
+                        route_map_settings.color_palette[i++] = 
+                            GetColor(item);
                     }
                 }
                 continue;
@@ -218,8 +194,38 @@ namespace json {
         }
     }
 
-    svg::Point Reader::GetLabelOffset(const Node& node) {
-        svg::Point point;
+    void Reader::LoadRoutingSettings(cat::TransportCatalogue& db,
+        const Dict& requests) {
+
+        auto& routing_settings = db.GetRoutingSettings();
+
+        for (const auto& [key, node] : requests) {
+            if (key == "bus_wait_time"sv) {
+                routing_settings.bus_wait_time = node.AsInt();
+                continue;
+            }
+            if (key == "bus_velocity"sv) {
+                routing_settings.bus_velocity = node.AsDouble();
+                continue;
+            }
+        }
+    }
+
+    void Reader::LoadSerializationSettings(cat::TransportCatalogue& db, 
+                                           const Dict& requests) {
+
+        auto& serialization_settings = db.GetSerializationSettings();
+
+        for (const auto& [key, node] : requests) {
+            if (key == "file"sv) {
+                serialization_settings.filename = node.AsString();
+                continue;
+            }
+        }
+    }
+
+    dom::Point Reader::GetLabelOffset(const Node& node) {
+        dom::Point point;
         if (node.IsArray()) {
             const Array arr = node.AsArray();
             if (arr.size() > 1) {
@@ -230,7 +236,7 @@ namespace json {
         return point;
     }
 
-    svg::Color Reader::GetColor(const Node& node) {
+    dom::Color Reader::GetColor(const Node& node) {
         if (node.IsString()) {
             return node.AsString();
         }
@@ -238,20 +244,20 @@ namespace json {
         if (node.IsArray()) {
             const Array arr = node.AsArray();
             if (arr.size() == 3) {
-                svg::Rgb color(arr[0].AsInt(),
-                               arr[1].AsInt(),
-                               arr[2].AsInt());
+                dom::Rgb color(arr[0].AsInt(),
+                    arr[1].AsInt(),
+                    arr[2].AsInt());
                 return color;
             }
             if (arr.size() == 4) {
-                svg::Rgba color(arr[0].AsInt(),
-                                arr[1].AsInt(),
-                                arr[2].AsInt(),
-                                arr[3].AsDouble());
+                dom::Rgba color(arr[0].AsInt(),
+                    arr[1].AsInt(),
+                    arr[2].AsInt(),
+                    arr[3].AsDouble());
                 return color;
             }
         }
-        return svg::Color{};
+        return dom::Color{};
     }
 
     void Reader::LoadStatRequests(const Array& stat_requests) {
@@ -283,9 +289,9 @@ namespace json {
                     query.from_stop =
                         request.at("from"s).AsString();
                 }
-                
+
                 if (request.count("to"s) > 0) {
-                    query.to_stop = 
+                    query.to_stop =
                         request.at("to"s).AsString();
                 }
 

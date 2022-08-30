@@ -1,6 +1,6 @@
 #include "request_handler.h"
 
-RequestHandler::RequestHandler(const cat::TransportCatalogue& db,
+RequestHandler::RequestHandler(cat::TransportCatalogue& db,
     json::Reader& loaded, svg::MapRenderer& map_renderer)
     : db_(db)
     , loaded_(loaded)
@@ -67,11 +67,10 @@ void RequestHandler::JSONout(std::ostream& out) {
         }
         else if (request.type == dom::QueryType::ROUTE) {
             const auto& routing_settings = 
-                loaded_.GetRoutingSettings();
-            if (loaded_.ReloadRoutingSettings()) {
-                transport_router_.BuildGraph(db_, 
-                    routing_settings);
-                loaded_.ReloadRoutingSettings(false);
+                db_.GetRoutingSettings();
+            if (!db_.RouterIsSet()) {
+                transport_router_.BuildGraph(db_);
+                db_.SetRouterIsSet(true);
             }
             std::vector<dom::TripAction> actions;
             actions = transport_router_.GetRoute(request.from_stop,
@@ -112,13 +111,11 @@ void RequestHandler::JSONout(std::ostream& out) {
                     std::move(json::Node(std::move(items)));
                 blocks["total_time"s] =
                     std::move(json::Node(total_time));
-
             }
             else {
                 blocks["error_message"s] =
                     std::move(json::Node("not found"s));
             }
-
         }
 
         root.push_back(std::move(json::Node(std::move(
@@ -133,9 +130,8 @@ void RequestHandler::JSONout(std::ostream& out) {
 }
 
 void RequestHandler::RenderMap(std::ostream& out) {
-    map_renderer_.RenderMap(db_, loaded_.GetRouteMapSettings()).Render(out);
+    map_renderer_.RenderMap(db_).Render(out);
 }
-
 
 void RequestHandler::TXTout(std::ostream& out, int precision) {
 
@@ -155,10 +151,9 @@ void RequestHandler::TXTout(std::ostream& out, int precision) {
             continue;
         }
         if (request.type == dom::QueryType::ROUTE) {
-            if (loaded_.ReloadRoutingSettings()) {
-                transport_router_.BuildGraph(db_,
-                    loaded_.GetRoutingSettings());
-                loaded_.ReloadRoutingSettings(false);
+            if (!db_.RouterIsSet()) {
+                transport_router_.BuildGraph(db_);
+                db_.SetRouterIsSet(true);
             }
             out << "ROUTE\n"sv;
             continue;

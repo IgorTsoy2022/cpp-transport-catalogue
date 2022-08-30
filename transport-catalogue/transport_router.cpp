@@ -2,8 +2,9 @@
 
 namespace cat {
 
-    void TransportRouter::BuildGraph(const TransportCatalogue& db,
-        const RoutingSettings& routing_settings) {
+    const double METERS_PER_SECOND = 16.666666667;
+
+    void TransportRouter::BuildGraph(const TransportCatalogue& db) {
 
         Clear();
 
@@ -19,15 +20,14 @@ namespace cat {
         }
 
         for (const auto& [_, bus] : db.GetBuses()) {
-            AddEdges(bus, db, routing_settings);
+            AddEdges(bus, db);
         }
 
         router_ = std::make_unique<graph::Router<double>>(graph_);
     }
 
     void TransportRouter::AddEdges(const dom::Bus* bus,
-        const TransportCatalogue& db,
-        const RoutingSettings& routing_settings) {
+        const TransportCatalogue& db) {
 
         const auto& bus_stops = bus->stops;
         auto bus_stops_count = bus_stops.size();
@@ -35,8 +35,11 @@ namespace cat {
             return;
         }
 
+        const dom::RoutingSettings& 
+        routing_settings = db.GetRoutingSettings();
+
         double bus_speed = 
-            routing_settings.bus_velocity * 1000.0 / 60;
+            routing_settings.bus_velocity * METERS_PER_SECOND;
         double bus_wait_time =
             routing_settings.bus_wait_time;
 

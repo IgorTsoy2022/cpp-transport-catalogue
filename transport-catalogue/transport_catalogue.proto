@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package cat_serialize;
+
+message Stop {
+    uint32 id = 1;
+    string name = 2;
+    double latitude = 3;
+    double longitude = 4;
+}
+
+message Distance {
+    uint32 from_stop_id = 1;
+    uint32 to_stop_id = 2;
+    int32 distance = 3;
+}
+
+message Bus {
+    string name = 1;
+    bool is_annular = 2;
+    repeated uint32 stop_ids = 3;
+}
+
+message Point {
+    double x = 1;
+    double y = 2;
+}
+
+message RGB {
+    uint32 red = 1;
+    uint32 green = 2;
+    uint32 blue = 3;
+}
+
+message RGBa {
+    uint32 red = 1;
+    uint32 green = 2;
+    uint32 blue = 3;
+    double opacity = 4;
+}
+
+/*
+message Color {
+    oneof Submission {
+        string string_value = 1;    
+        RGB rgb_value = 2;
+        RGBa rgba_value = 3;
+    }
+}
+*/
+
+message Color {
+    optional string string_value = 1;    
+    optional RGB rgb_value = 2;
+    optional RGBa rgba_value = 3;
+}
+
+message RouteMapSettings {
+    double width = 1;
+    double height = 2;
+    double padding = 3;
+
+    double line_width = 4;
+
+    double stop_radius = 5;
+
+    uint32 bus_label_font_size = 6;
+    Point bus_label_offset = 7;
+
+    uint32 stop_label_font_size = 8;
+    Point stop_label_offset = 9;
+
+    Color underlayer_color = 10;
+
+    double underlayer_width = 11;
+
+    repeated Color color_palette = 12;
+}
+
+message RoutingSettings {
+    uint32 bus_wait_time = 1;
+    double bus_velocity = 2;
+}
+
+message SerializationSettings {
+    string filename = 1;
+}
+
+message TransportCatalogueBase {
+    repeated Stop stops = 1;
+    repeated Distance road_distances = 2;
+    repeated Bus buses = 3;
+    RouteMapSettings route_map_settings = 4;
+    RoutingSettings routing_settings = 5;
+    SerializationSettings serialization_settings = 6;
+}
