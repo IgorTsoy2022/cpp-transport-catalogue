@@ -6,7 +6,6 @@
 
 using namespace std::literals;
 
-/*
 void PrintUsage(std::ostream& stream = std::cerr) {
     stream << "Usage: transport_catalogue [make_base|process_requests]\n"sv;
 }
@@ -50,8 +49,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 }
-*/
 
+/*
 int main() {
 
     json::Reader read_from_json;
@@ -116,3 +115,4 @@ int main() {
 
     return 0;
 }
+*/
