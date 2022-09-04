@@ -6,16 +6,18 @@ namespace cat {
 
     const size_t PRIME_NUMBER = 37;
 
-    bool Buscomp::operator()
-        (const dom::Bus* left, const dom::Bus* right) const {
-        return left->name < right->name;
-    }
+    namespace detail {
+        bool Buscomp::operator()
+            (const dom::Bus* left, const dom::Bus* right) const {
+            return left->name < right->name;
+        }
 
-    size_t TwoStopsHasher::operator()
-        (const std::pair<dom::Stop*, dom::Stop*> stops) const {
-        return reinterpret_cast<size_t>(stops.first) +
-            reinterpret_cast<size_t>(stops.second) *
-            PRIME_NUMBER;
+        size_t TwoStopsHasher::operator()
+            (const std::pair<dom::Stop*, dom::Stop*> stops) const {
+            return reinterpret_cast<size_t>(stops.first) +
+                reinterpret_cast<size_t>(stops.second) *
+                PRIME_NUMBER;
+        }
     }
 
     // public:
@@ -250,48 +252,9 @@ namespace cat {
         return stop_buses_map_;
     }
 
-    const std::unordered_map<std::pair<dom::Stop*, dom::Stop*>,
-        int, TwoStopsHasher>&
+    const MapStopsDistance&
         TransportCatalogue::GetDistances() const {
         return distances_;
-    }
-
-    dom::RouteMapSettings&
-        TransportCatalogue::GetRouteMapSettings() {
-        return route_map_settings_;
-    }
-
-    const dom::RouteMapSettings&
-        TransportCatalogue::GetRouteMapSettings() const {
-        return route_map_settings_;
-    }
-
-    const bool TransportCatalogue::RouterIsSet() const {
-        return router_is_set_;
-    }
-
-    const void TransportCatalogue::SetRouterIsSet(bool value) {
-        router_is_set_ = value;
-    }
-
-    dom::RoutingSettings&
-        TransportCatalogue::GetRoutingSettings()  {
-        return routing_settings_;
-    }
-
-    const dom::RoutingSettings&
-        TransportCatalogue::GetRoutingSettings() const {
-        return routing_settings_;
-    }
-
-    dom::SerializationSettings&
-        TransportCatalogue::GetSerializationSettings() {
-        return serialization_settings_;
-    }
-
-    const dom::SerializationSettings&
-        TransportCatalogue::GetSerializationSettings() const {
-        return serialization_settings_;
     }
 
     void TransportCatalogue::Clear() {
@@ -310,28 +273,6 @@ namespace cat {
 
         stops_map_.clear();
         stops_.clear();
-
-    //    route_map_settings_ = {};
-        route_map_settings_.width = 0.0;
-        route_map_settings_.height = 0.0;
-        route_map_settings_.padding = 0.0;
-        route_map_settings_.line_width = 0.0;
-        route_map_settings_.stop_radius = 0.0;
-        route_map_settings_.bus_label_font_size = 0;
-        route_map_settings_.bus_label_offset = { 0.0, 0.0 };
-        route_map_settings_.stop_label_font_size = 0;
-        route_map_settings_.stop_label_offset = { 0.0, 0.0 };
-        route_map_settings_.underlayer_color = {};
-        route_map_settings_.underlayer_width = 0.0;
-
-        if (route_map_settings_.color_palette.size() > 0) {
-    //        route_map_settings_.color_palette.clear();
-        }
-
-        routing_settings_.bus_wait_time = 0;
-        routing_settings_.bus_velocity = 0.0;
-
-        serialization_settings_.filename = "";
     }
 
     // private:

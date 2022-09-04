@@ -115,9 +115,13 @@ namespace svg {
     class MapRenderer {
     public:
 
-        svg::Document RenderMap(const cat::TransportCatalogue& db);
+        const svg::Document RenderMap(const cat::TransportCatalogue& db);
+
+        dom::RouteMapSettings& GetRouteMapSettings();
 
     private:
+        dom::RouteMapSettings route_map_settings_;
+
         std::map<std::string_view, dom::Point>
         StopCoords(const cat::TransportCatalogue& db,
                    std::set<std::string_view>& sortered_bus_names);

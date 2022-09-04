@@ -3,8 +3,7 @@
 #include "json.h"
 #include "map_renderer.h"
 #include "serialization.h"
-#include "svg.h"
-#include "transport_catalogue.h"
+#include "transport_router.h"
 
 namespace json {
 
@@ -22,7 +21,10 @@ namespace json {
         Reader() = default;
 
         void LoadRequests(cat::TransportCatalogue& db,
-            std::istream& in = std::cin);
+                          svg::MapRenderer& map_renderer,
+                          cat::TransportRouter& transport_router,
+                          serialization::Portal& portal,
+                          std::istream& in = std::cin);
 
         const std::vector<dom::Query>& GetStatRequests() const;
 
@@ -35,11 +37,11 @@ namespace json {
         void LoadBuses(const Dict& request,
             Buses& buses);
 
-        void LoadRouteMapSettings(cat::TransportCatalogue& db, 
+        void LoadRouteMapSettings(svg::MapRenderer& map_renderer,
                                   const Dict& requests);
-        void LoadRoutingSettings(cat::TransportCatalogue& db,
+        void LoadRoutingSettings(cat::TransportRouter& transport_router,
                                  const Dict& requests);
-        void LoadSerializationSettings(cat::TransportCatalogue& db, 
+        void LoadSerializationSettings(serialization::Portal& portal,
                                        const Dict& requests);
 
         dom::Point GetLabelOffset(const Node& node);

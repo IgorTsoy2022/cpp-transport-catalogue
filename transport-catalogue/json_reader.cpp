@@ -7,7 +7,10 @@ namespace json {
     // Reader: public
 
     void Reader::LoadRequests(cat::TransportCatalogue& db,
-        std::istream& in) {
+                              svg::MapRenderer& map_renderer,
+                              cat::TransportRouter& transport_router,
+                              serialization::Portal& portal,
+                              std::istream& in) {
         Distances distances;
         Buses buses;
         Document doc = Load(in);
@@ -35,20 +38,20 @@ namespace json {
                         LoadBuses(request, buses);
                     }
                 }
-                db.SetRouterIsSet(false);
+                transport_router.SetRouterIsSet(false);
                 continue;
             }
             if (key == "render_settings"sv) {
-                LoadRouteMapSettings(db, value.AsDict());
+                LoadRouteMapSettings(map_renderer, value.AsDict());
                 continue;
             }
             if (key == "routing_settings"sv) {
-                LoadRoutingSettings(db, value.AsDict());
-                db.SetRouterIsSet(false);
+                LoadRoutingSettings(transport_router, value.AsDict());
+                transport_router.SetRouterIsSet(false);
                 continue;
             }
             if (key == "serialization_settings"sv) {
-                LoadSerializationSettings(db, value.AsDict());
+                LoadSerializationSettings(portal, value.AsDict());
                 continue;
             }
             if (key == "stat_requests"sv) {
@@ -122,10 +125,10 @@ namespace json {
         }
     }
 
-    void Reader::LoadRouteMapSettings(cat::TransportCatalogue& db, 
+    void Reader::LoadRouteMapSettings(svg::MapRenderer& map_renderer, 
                                       const Dict& requests) {
 
-        auto& route_map_settings = db.GetRouteMapSettings();
+        auto& route_map_settings = map_renderer.GetRouteMapSettings();
 
         for (const auto& [key, node] : requests) {
             if (key == "width"sv) {
@@ -185,7 +188,7 @@ namespace json {
                     route_map_settings.color_palette.resize(size);
                     size_t i = 0;
                     for (const auto& item : node.AsArray()) {
-                        route_map_settings.color_palette[i++] = 
+                        route_map_settings.color_palette[i++] =
                             GetColor(item);
                     }
                 }
@@ -194,10 +197,10 @@ namespace json {
         }
     }
 
-    void Reader::LoadRoutingSettings(cat::TransportCatalogue& db,
+    void Reader::LoadRoutingSettings(cat::TransportRouter& transport_router,
         const Dict& requests) {
 
-        auto& routing_settings = db.GetRoutingSettings();
+        auto& routing_settings = transport_router.GetRoutingSettings();
 
         for (const auto& [key, node] : requests) {
             if (key == "bus_wait_time"sv) {
@@ -211,10 +214,10 @@ namespace json {
         }
     }
 
-    void Reader::LoadSerializationSettings(cat::TransportCatalogue& db, 
+    void Reader::LoadSerializationSettings(serialization::Portal& portal,
                                            const Dict& requests) {
 
-        auto& serialization_settings = db.GetSerializationSettings();
+        auto& serialization_settings = portal.GetSerializationSettings();
 
         for (const auto& [key, node] : requests) {
             if (key == "file"sv) {

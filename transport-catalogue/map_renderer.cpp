@@ -23,17 +23,15 @@ namespace svg {
 
     using namespace std::literals;
 
-    svg::Document MapRenderer::RenderMap(
+    const svg::Document MapRenderer::RenderMap(
         const cat::TransportCatalogue& db) {
-
-        const auto& route_map_settings = db.GetRouteMapSettings();
 
         std::set<std::string_view> sortered_bus_names;
         std::map<std::string_view, dom::Point>
             stop_coords = StopCoords(db, sortered_bus_names);
 
         int colors_count =
-            static_cast<int>(route_map_settings.color_palette.size());
+            static_cast<int>(route_map_settings_.color_palette.size());
         int color_index = 0;
 
         std::vector<std::unique_ptr<svg::Drawable>> text_container;
@@ -49,8 +47,8 @@ namespace svg {
             svg::Polyline polyline = CreateRoute(bus,
                 stop_coords,
                 svg::NoneColor,
-                route_map_settings.color_palette[color_index],
-                route_map_settings.line_width,
+                route_map_settings_.color_palette[color_index],
+                route_map_settings_.line_width,
                 svg::StrokeLineCap::ROUND,
                 svg::StrokeLineJoin::ROUND);
 
@@ -59,15 +57,15 @@ namespace svg {
             auto base_text =
                 BaseText(bus_name,
                     stop_coords.at(bus->stops.front()->name),
-                    route_map_settings.bus_label_offset,
-                    route_map_settings.bus_label_font_size,
+                    route_map_settings_.bus_label_offset,
+                    route_map_settings_.bus_label_font_size,
                     "Verdana"s, "bold"s);
             svg::Label substrate = Substrate(base_text,
-                route_map_settings.underlayer_color,
-                route_map_settings.underlayer_color,
-                route_map_settings.underlayer_width);
+                route_map_settings_.underlayer_color,
+                route_map_settings_.underlayer_color,
+                route_map_settings_.underlayer_width);
             svg::Label caption = Caption(base_text,
-                route_map_settings.color_palette[color_index]);
+                route_map_settings_.color_palette[color_index]);
             text_container.push_back(
                 std::make_unique<svg::Label>(substrate));
             text_container.push_back(
@@ -78,15 +76,15 @@ namespace svg {
                 base_text =
                     BaseText(bus_name,
                         stop_coords.at(bus->stops.back()->name),
-                        route_map_settings.bus_label_offset,
-                        route_map_settings.bus_label_font_size,
+                        route_map_settings_.bus_label_offset,
+                        route_map_settings_.bus_label_font_size,
                         "Verdana"s, "bold"s);
                 svg::Label substrate = Substrate(base_text,
-                    route_map_settings.underlayer_color,
-                    route_map_settings.underlayer_color,
-                    route_map_settings.underlayer_width);
+                    route_map_settings_.underlayer_color,
+                    route_map_settings_.underlayer_color,
+                    route_map_settings_.underlayer_width);
                 svg::Label caption = Caption(base_text,
-                    route_map_settings.color_palette[color_index]);
+                    route_map_settings_.color_palette[color_index]);
                 text_container.push_back(
                     std::make_unique<svg::Label>(substrate));
                 text_container.push_back(
@@ -102,18 +100,18 @@ namespace svg {
         for (const auto& [stop_name, coords] : stop_coords) {
             svg::Circle circle;
             circle.SetCenter(coords)
-                .SetRadius(route_map_settings.stop_radius)
+                .SetRadius(route_map_settings_.stop_radius)
                 .SetFillColor("white"s);
 
             doc.Add(std::move(circle));
 
             auto base_text = BaseText(stop_name, coords,
-                route_map_settings.stop_label_offset,
-                route_map_settings.stop_label_font_size, "Verdana"s);
+                route_map_settings_.stop_label_offset,
+                route_map_settings_.stop_label_font_size, "Verdana"s);
             svg::Label substrate = Substrate(base_text,
-                route_map_settings.underlayer_color,
-                route_map_settings.underlayer_color,
-                route_map_settings.underlayer_width);
+                route_map_settings_.underlayer_color,
+                route_map_settings_.underlayer_color,
+                route_map_settings_.underlayer_width);
             svg::Label caption = Caption(base_text, "black"s);
             text_container.push_back(
                 std::make_unique<svg::Label>(substrate));
@@ -126,13 +124,16 @@ namespace svg {
         return doc;
     }
 
+    dom::RouteMapSettings&
+        MapRenderer::GetRouteMapSettings() {
+        return route_map_settings_;
+    }
+
     std::map<std::string_view, dom::Point>
     MapRenderer::StopCoords(const cat::TransportCatalogue& db,
                             std::set<std::string_view>& buses) {
 
         std::map<std::string_view, dom::Point> coords;
-
-        const auto& route_map_settings = db.GetRouteMapSettings();
 
         std::vector<geo::Coordinates> geo_coords;
         std::unordered_set<dom::Stop*> stops;
@@ -148,8 +149,8 @@ namespace svg {
 
         const svg::SphereProjector proj{
             geo_coords.begin(), geo_coords.end(),
-            route_map_settings.width, route_map_settings.height,
-            route_map_settings.padding
+            route_map_settings_.width, route_map_settings_.height,
+            route_map_settings_.padding
         };
         geo_coords.clear();
 

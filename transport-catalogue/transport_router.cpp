@@ -26,6 +26,36 @@ namespace cat {
         router_ = std::make_unique<graph::Router<double>>(graph_);
     }
 
+    graph::DirectedWeightedGraph<double>&
+    TransportRouter::GetGraph() {
+        return graph_;
+    }
+
+    std::vector<dom::Stop*>&
+    TransportRouter::GetStops() {
+        return stops_;
+    }
+
+    std::unordered_map<std::string_view, size_t>&
+    TransportRouter::GetStopsIds() {
+        return stops_ids_;
+    }
+
+    std::unordered_map<graph::EdgeId, std::string_view>&
+    TransportRouter::GetBusesNames() {
+        return buses_names_;
+    }
+
+    std::unordered_map<graph::EdgeId, int>&
+    TransportRouter::GetStopsCounts() {
+        return stops_counts_;
+    }
+
+    std::unique_ptr<graph::Router<double>>&
+    TransportRouter::GetRouter() {
+        return router_;
+    }
+
     void TransportRouter::AddEdges(const dom::Bus* bus,
         const TransportCatalogue& db) {
 
@@ -35,13 +65,10 @@ namespace cat {
             return;
         }
 
-        const dom::RoutingSettings& 
-        routing_settings = db.GetRoutingSettings();
-
         double bus_speed = 
-            routing_settings.bus_velocity * METERS_PER_SECOND;
+            routing_settings_.bus_velocity * METERS_PER_SECOND;
         double bus_wait_time =
-            routing_settings.bus_wait_time;
+            routing_settings_.bus_wait_time;
 
         for (size_t i = 0; i < bus_stops_count - 1; ++i) {
             for (size_t j = i + 1; j < bus_stops_count; ++j) {
@@ -152,6 +179,19 @@ namespace cat {
         }
 
         return result;
+    }
+
+    const bool TransportRouter::RouterIsSet() const {
+        return router_is_set_;
+    }
+
+    const void TransportRouter::SetRouterIsSet(bool value) {
+        router_is_set_ = value;
+    }
+
+    dom::RoutingSettings&
+        TransportRouter::GetRoutingSettings() {
+        return routing_settings_;
     }
 
     void TransportRouter::Clear() {

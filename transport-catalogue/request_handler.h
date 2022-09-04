@@ -2,7 +2,6 @@
 
 #include "json_builder.h"
 #include "json_reader.h"
-#include "transport_router.h"
 
 #include <iomanip>
 #include <iostream>
@@ -17,23 +16,41 @@
 class RequestHandler {
 public:
 
-    RequestHandler(cat::TransportCatalogue& db,
-        json::Reader& loaded,
-        svg::MapRenderer& map_renderer);
+    RequestHandler(json::Reader& reader,
+        cat::TransportCatalogue& db,
+        svg::MapRenderer& map_renderer,
+        cat::TransportRouter& transport_router);
 
-    void JSONout(std::ostream& out);
-    void TXTout(std::ostream& out, int precision = 6);
-    void RenderMap(std::ostream& out);
+/*
+    json::Reader& GetReader();
+    cat::TransportCatalogue& GetTransportCatalogue();
+    svg::MapRenderer& GetMapRenderer();
+    cat::TransportRouter& GetTransportRouter();
+*/
+
+    const void BuildRouter() const;
+
+    const void JSONout(std::ostream& out) const;
+    const void TXTout(std::ostream& out, int precision = 6) const;
+    const void RenderMap(std::ostream& out) const;
 
 private:
+    json::Reader& reader_;
     cat::TransportCatalogue& db_;
-    json::Reader& loaded_;
     svg::MapRenderer& map_renderer_;
+    cat::TransportRouter& transport_router_;
 
-    cat::TransportRouter transport_router_;
+    const void StopInfo(const dom::Query& request,
+        json::Dict& blocks) const;
+    const void BusInfo(const dom::Query& request,
+        json::Dict& blocks) const;
+    const void RouterInfo(const dom::Query& request,
+        json::Dict& blocks) const;
 
-    void BusInfo(const dom::BusInfo& bus_info, int precision,
-        std::ostream& out);
-    void StopInfo(const dom::StopInfo& stop_info,
-        std::ostream& out);
+    const void StopInfo(const dom::Query& request,
+        std::ostream& out) const;
+    const void BusInfo(const dom::Query& request, int precision,
+        std::ostream& out) const;
+    const void RouterInfo(const dom::Query& request,
+        std::ostream& out) const;
 };
